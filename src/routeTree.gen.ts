@@ -17,6 +17,8 @@ import { Route as AppInboxRouteImport } from './routes/app.inbox'
 import { Route as AppFunnelsRouteImport } from './routes/app.funnels'
 import { Route as AppDashboardRouteImport } from './routes/app.dashboard'
 import { Route as AppContactsRouteImport } from './routes/app.contacts'
+import { Route as ApiPublicWhatsappWebhookRouteImport } from './routes/api/public/whatsapp/webhook'
+import { Route as ApiPublicMetaLeadsWebhookRouteImport } from './routes/api/public/meta/leads/webhook'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -58,6 +60,18 @@ const AppContactsRoute = AppContactsRouteImport.update({
   path: '/contacts',
   getParentRoute: () => AppRoute,
 } as any)
+const ApiPublicWhatsappWebhookRoute =
+  ApiPublicWhatsappWebhookRouteImport.update({
+    id: '/api/public/whatsapp/webhook',
+    path: '/api/public/whatsapp/webhook',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicMetaLeadsWebhookRoute =
+  ApiPublicMetaLeadsWebhookRouteImport.update({
+    id: '/api/public/meta/leads/webhook',
+    path: '/api/public/meta/leads/webhook',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -68,6 +82,8 @@ export interface FileRoutesByFullPath {
   '/app/funnels': typeof AppFunnelsRoute
   '/app/inbox': typeof AppInboxRoute
   '/app/settings': typeof AppSettingsRoute
+  '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
+  '/api/public/meta/leads/webhook': typeof ApiPublicMetaLeadsWebhookRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -78,6 +94,8 @@ export interface FileRoutesByTo {
   '/app/funnels': typeof AppFunnelsRoute
   '/app/inbox': typeof AppInboxRoute
   '/app/settings': typeof AppSettingsRoute
+  '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
+  '/api/public/meta/leads/webhook': typeof ApiPublicMetaLeadsWebhookRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -89,6 +107,8 @@ export interface FileRoutesById {
   '/app/funnels': typeof AppFunnelsRoute
   '/app/inbox': typeof AppInboxRoute
   '/app/settings': typeof AppSettingsRoute
+  '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
+  '/api/public/meta/leads/webhook': typeof ApiPublicMetaLeadsWebhookRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -101,6 +121,8 @@ export interface FileRouteTypes {
     | '/app/funnels'
     | '/app/inbox'
     | '/app/settings'
+    | '/api/public/whatsapp/webhook'
+    | '/api/public/meta/leads/webhook'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -111,6 +133,8 @@ export interface FileRouteTypes {
     | '/app/funnels'
     | '/app/inbox'
     | '/app/settings'
+    | '/api/public/whatsapp/webhook'
+    | '/api/public/meta/leads/webhook'
   id:
     | '__root__'
     | '/'
@@ -121,12 +145,16 @@ export interface FileRouteTypes {
     | '/app/funnels'
     | '/app/inbox'
     | '/app/settings'
+    | '/api/public/whatsapp/webhook'
+    | '/api/public/meta/leads/webhook'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ApiPublicWhatsappWebhookRoute: typeof ApiPublicWhatsappWebhookRoute
+  ApiPublicMetaLeadsWebhookRoute: typeof ApiPublicMetaLeadsWebhookRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -187,6 +215,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppContactsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/api/public/whatsapp/webhook': {
+      id: '/api/public/whatsapp/webhook'
+      path: '/api/public/whatsapp/webhook'
+      fullPath: '/api/public/whatsapp/webhook'
+      preLoaderRoute: typeof ApiPublicWhatsappWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/meta/leads/webhook': {
+      id: '/api/public/meta/leads/webhook'
+      path: '/api/public/meta/leads/webhook'
+      fullPath: '/api/public/meta/leads/webhook'
+      preLoaderRoute: typeof ApiPublicMetaLeadsWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -212,6 +254,8 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
   AuthRoute: AuthRoute,
+  ApiPublicWhatsappWebhookRoute: ApiPublicWhatsappWebhookRoute,
+  ApiPublicMetaLeadsWebhookRoute: ApiPublicMetaLeadsWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
