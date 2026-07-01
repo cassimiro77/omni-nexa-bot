@@ -14,16 +14,227 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      contacts: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          last_message_at: string | null
+          metadata: Json | null
+          name: string | null
+          origin: string | null
+          phone: string | null
+          status: string
+          tags: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          last_message_at?: string | null
+          metadata?: Json | null
+          name?: string | null
+          origin?: string | null
+          phone?: string | null
+          status?: string
+          tags?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          last_message_at?: string | null
+          metadata?: Json | null
+          name?: string | null
+          origin?: string | null
+          phone?: string | null
+          status?: string
+          tags?: string[] | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      events: {
+        Row: {
+          created_at: string
+          id: string
+          payload: Json | null
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          payload?: Json | null
+          type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          payload?: Json | null
+          type?: string
+        }
+        Relationships: []
+      }
+      funnels: {
+        Row: {
+          active: boolean
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          steps: Json
+          triggers: Json
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          steps?: Json
+          triggers?: Json
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          steps?: Json
+          triggers?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      messages: {
+        Row: {
+          ai_used: boolean
+          channel: string
+          contact_id: string
+          content: string
+          created_at: string
+          direction: string
+          id: string
+          metadata: Json | null
+          wa_message_id: string | null
+        }
+        Insert: {
+          ai_used?: boolean
+          channel?: string
+          contact_id: string
+          content: string
+          created_at?: string
+          direction: string
+          id?: string
+          metadata?: Json | null
+          wa_message_id?: string | null
+        }
+        Update: {
+          ai_used?: boolean
+          channel?: string
+          contact_id?: string
+          content?: string
+          created_at?: string
+          direction?: string
+          id?: string
+          metadata?: Json | null
+          wa_message_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
+      settings: {
+        Row: {
+          ai_system_prompt: string | null
+          business_name: string | null
+          id: number
+          outbound_webhook_url: string | null
+          updated_at: string
+          welcome_message: string | null
+        }
+        Insert: {
+          ai_system_prompt?: string | null
+          business_name?: string | null
+          id?: number
+          outbound_webhook_url?: string | null
+          updated_at?: string
+          welcome_message?: string | null
+        }
+        Update: {
+          ai_system_prompt?: string | null
+          business_name?: string | null
+          id?: number
+          outbound_webhook_url?: string | null
+          updated_at?: string
+          welcome_message?: string | null
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "operator"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +361,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "operator"],
+    },
   },
 } as const
