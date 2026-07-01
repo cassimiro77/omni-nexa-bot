@@ -13,6 +13,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppSettingsRouteImport } from './routes/app.settings'
+import { Route as AppIntegrationsRouteImport } from './routes/app.integrations'
 import { Route as AppInboxRouteImport } from './routes/app.inbox'
 import { Route as AppFunnelsRouteImport } from './routes/app.funnels'
 import { Route as AppDashboardRouteImport } from './routes/app.dashboard'
@@ -39,6 +40,11 @@ const IndexRoute = IndexRouteImport.update({
 const AppSettingsRoute = AppSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppIntegrationsRoute = AppIntegrationsRouteImport.update({
+  id: '/integrations',
+  path: '/integrations',
   getParentRoute: () => AppRoute,
 } as any)
 const AppInboxRoute = AppInboxRouteImport.update({
@@ -87,6 +93,7 @@ export interface FileRoutesByFullPath {
   '/app/dashboard': typeof AppDashboardRoute
   '/app/funnels': typeof AppFunnelsRoute
   '/app/inbox': typeof AppInboxRoute
+  '/app/integrations': typeof AppIntegrationsRoute
   '/app/settings': typeof AppSettingsRoute
   '/api/public/cron/tick': typeof ApiPublicCronTickRoute
   '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
@@ -100,6 +107,7 @@ export interface FileRoutesByTo {
   '/app/dashboard': typeof AppDashboardRoute
   '/app/funnels': typeof AppFunnelsRoute
   '/app/inbox': typeof AppInboxRoute
+  '/app/integrations': typeof AppIntegrationsRoute
   '/app/settings': typeof AppSettingsRoute
   '/api/public/cron/tick': typeof ApiPublicCronTickRoute
   '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
@@ -114,6 +122,7 @@ export interface FileRoutesById {
   '/app/dashboard': typeof AppDashboardRoute
   '/app/funnels': typeof AppFunnelsRoute
   '/app/inbox': typeof AppInboxRoute
+  '/app/integrations': typeof AppIntegrationsRoute
   '/app/settings': typeof AppSettingsRoute
   '/api/public/cron/tick': typeof ApiPublicCronTickRoute
   '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
@@ -129,6 +138,7 @@ export interface FileRouteTypes {
     | '/app/dashboard'
     | '/app/funnels'
     | '/app/inbox'
+    | '/app/integrations'
     | '/app/settings'
     | '/api/public/cron/tick'
     | '/api/public/whatsapp/webhook'
@@ -142,6 +152,7 @@ export interface FileRouteTypes {
     | '/app/dashboard'
     | '/app/funnels'
     | '/app/inbox'
+    | '/app/integrations'
     | '/app/settings'
     | '/api/public/cron/tick'
     | '/api/public/whatsapp/webhook'
@@ -155,6 +166,7 @@ export interface FileRouteTypes {
     | '/app/dashboard'
     | '/app/funnels'
     | '/app/inbox'
+    | '/app/integrations'
     | '/app/settings'
     | '/api/public/cron/tick'
     | '/api/public/whatsapp/webhook'
@@ -198,6 +210,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/app/settings'
       preLoaderRoute: typeof AppSettingsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/integrations': {
+      id: '/app/integrations'
+      path: '/integrations'
+      fullPath: '/app/integrations'
+      preLoaderRoute: typeof AppIntegrationsRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/inbox': {
@@ -257,6 +276,7 @@ interface AppRouteChildren {
   AppDashboardRoute: typeof AppDashboardRoute
   AppFunnelsRoute: typeof AppFunnelsRoute
   AppInboxRoute: typeof AppInboxRoute
+  AppIntegrationsRoute: typeof AppIntegrationsRoute
   AppSettingsRoute: typeof AppSettingsRoute
 }
 
@@ -265,6 +285,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppDashboardRoute: AppDashboardRoute,
   AppFunnelsRoute: AppFunnelsRoute,
   AppInboxRoute: AppInboxRoute,
+  AppIntegrationsRoute: AppIntegrationsRoute,
   AppSettingsRoute: AppSettingsRoute,
 }
 
