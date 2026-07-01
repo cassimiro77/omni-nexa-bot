@@ -59,18 +59,21 @@ export type Database = {
       events: {
         Row: {
           created_at: string
+          dispatched_at: string | null
           id: string
           payload: Json | null
           type: string
         }
         Insert: {
           created_at?: string
+          dispatched_at?: string | null
           id?: string
           payload?: Json | null
           type: string
         }
         Update: {
           created_at?: string
+          dispatched_at?: string | null
           id?: string
           payload?: Json | null
           type?: string
