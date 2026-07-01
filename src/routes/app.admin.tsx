@@ -36,7 +36,7 @@ function AdminPage() {
     // remove current, insert new
     const toRemove = currentRoles.filter((r) => r !== newRole);
     for (const r of toRemove) {
-      await supabase.from("user_roles").delete().eq("user_id", userId).eq("role", r);
+      await supabase.from("user_roles").delete().eq("user_id", userId).eq("role", r as "admin" | "operator");
     }
     if (!currentRoles.includes(newRole)) {
       const { error } = await supabase.from("user_roles").insert({ user_id: userId, role: newRole });
