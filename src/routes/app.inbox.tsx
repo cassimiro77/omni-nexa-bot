@@ -47,6 +47,21 @@ function Inbox() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
+  // Realtime: refetch on inserts to messages or contacts
+  useEffect(() => {
+    const ch = supabase
+      .channel("inbox-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, () => {
+        qc.invalidateQueries({ queryKey: ["messages"] });
+        qc.invalidateQueries({ queryKey: ["contacts-inbox"] });
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "contacts" }, () => {
+        qc.invalidateQueries({ queryKey: ["contacts-inbox"] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [qc]);
+
   const selected = contacts?.find((c) => c.id === selectedId);
 
   async function sendMessage(content: string, aiUsed = false) {

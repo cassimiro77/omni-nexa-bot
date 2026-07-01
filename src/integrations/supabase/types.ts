@@ -59,23 +59,77 @@ export type Database = {
       events: {
         Row: {
           created_at: string
+          dispatched_at: string | null
           id: string
           payload: Json | null
           type: string
         }
         Insert: {
           created_at?: string
+          dispatched_at?: string | null
           id?: string
           payload?: Json | null
           type: string
         }
         Update: {
           created_at?: string
+          dispatched_at?: string | null
           id?: string
           payload?: Json | null
           type?: string
         }
         Relationships: []
+      }
+      funnel_runs: {
+        Row: {
+          contact_id: string
+          created_at: string
+          current_step: number
+          funnel_id: string
+          id: string
+          last_error: string | null
+          next_run_at: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          contact_id: string
+          created_at?: string
+          current_step?: number
+          funnel_id: string
+          id?: string
+          last_error?: string | null
+          next_run_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          contact_id?: string
+          created_at?: string
+          current_step?: number
+          funnel_id?: string
+          id?: string
+          last_error?: string | null
+          next_run_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "funnel_runs_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "funnel_runs_funnel_id_fkey"
+            columns: ["funnel_id"]
+            isOneToOne: false
+            referencedRelation: "funnels"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       funnels: {
         Row: {
@@ -107,6 +161,87 @@ export type Database = {
           steps?: Json
           triggers?: Json
           updated_at?: string
+        }
+        Relationships: []
+      }
+      integrations: {
+        Row: {
+          config: Json
+          created_at: string
+          enabled: boolean
+          events: string[]
+          id: string
+          last_error: string | null
+          last_status: string | null
+          last_sync_at: string | null
+          name: string
+          provider: string
+          updated_at: string
+        }
+        Insert: {
+          config?: Json
+          created_at?: string
+          enabled?: boolean
+          events?: string[]
+          id?: string
+          last_error?: string | null
+          last_status?: string | null
+          last_sync_at?: string | null
+          name: string
+          provider: string
+          updated_at?: string
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          enabled?: boolean
+          events?: string[]
+          id?: string
+          last_error?: string | null
+          last_status?: string | null
+          last_sync_at?: string | null
+          name?: string
+          provider?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      message_templates: {
+        Row: {
+          body: string
+          category: string
+          created_at: string
+          id: string
+          language: string
+          meta_template_name: string | null
+          name: string
+          status: string
+          updated_at: string
+          variables: string[]
+        }
+        Insert: {
+          body: string
+          category?: string
+          created_at?: string
+          id?: string
+          language?: string
+          meta_template_name?: string | null
+          name: string
+          status?: string
+          updated_at?: string
+          variables?: string[]
+        }
+        Update: {
+          body?: string
+          category?: string
+          created_at?: string
+          id?: string
+          language?: string
+          meta_template_name?: string | null
+          name?: string
+          status?: string
+          updated_at?: string
+          variables?: string[]
         }
         Relationships: []
       }
