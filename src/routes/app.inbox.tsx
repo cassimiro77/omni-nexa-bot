@@ -70,15 +70,11 @@ function Inbox() {
     if (!selectedId || !content.trim()) return;
     setSending(true);
     try {
-      const { error } = await supabase.from("messages").insert({
-        contact_id: selectedId, direction: "outbound", content, ai_used: aiUsed, channel: "whatsapp",
-      });
-      if (error) throw error;
-      await supabase.from("contacts").update({ last_message_at: new Date().toISOString(), status: "in_conversation" }).eq("id", selectedId);
+      await sendWa({ data: { contactId: selectedId, content, aiUsed } });
       setInput("");
       qc.invalidateQueries({ queryKey: ["messages", selectedId] });
       qc.invalidateQueries({ queryKey: ["contacts-inbox"] });
-      toast.success("Mensagem registrada" + (aiUsed ? " (IA)" : ""));
+      toast.success("Enviado via WhatsApp" + (aiUsed ? " (IA)" : ""));
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "Erro ao enviar");
     } finally { setSending(false); }
