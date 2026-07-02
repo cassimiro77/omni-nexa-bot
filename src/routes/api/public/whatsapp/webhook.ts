@@ -48,7 +48,7 @@ export const Route = createFileRoute("/api/public/whatsapp/webhook")({
         const canProcess = sigOk || (!sig && isExpectedPhoneNumber);
 
         await supabaseAdmin.from("events").insert({
-          type: sigOk ? "whatsapp.webhook" : "whatsapp.webhook.invalid_sig",
+          type: canProcess ? "whatsapp.webhook" : "whatsapp.webhook.invalid_sig",
           payload: {
             signature_valid: sigOk,
             has_signature: Boolean(sig),
@@ -80,6 +80,11 @@ export const Route = createFileRoute("/api/public/whatsapp/webhook")({
                     last_message_at: new Date().toISOString(),
                   }).select("id").single();
                   existing = ins.data;
+                } else if (waContact?.profile?.name) {
+                  await supabaseAdmin
+                    .from("contacts")
+                    .update({ name: waContact.profile.name, origin: "whatsapp" })
+                    .eq("id", existing.id);
                 }
                 if (existing) {
                   if (m.id) {
