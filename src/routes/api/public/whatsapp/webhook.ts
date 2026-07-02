@@ -19,24 +19,30 @@ export const Route = createFileRoute("/api/public/whatsapp/webhook")({
       },
       POST: async ({ request }) => {
         const raw = await request.text();
-        // Signature verification (skipped in mock mode)
+        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+        // Always log the raw hit BEFORE signature check, for diagnostics
+        const sig = request.headers.get("x-hub-signature-256") ?? "";
         const appSecret = process.env.META_APP_SECRET;
+        let sigOk = !appSecret;
         if (appSecret) {
-          const sig = request.headers.get("x-hub-signature-256") ?? "";
           const { createHmac, timingSafeEqual } = await import("crypto");
           const expected = "sha256=" + createHmac("sha256", appSecret).update(raw).digest("hex");
           try {
-            if (sig.length !== expected.length || !timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) {
-              return new Response("invalid signature", { status: 401 });
-            }
-          } catch { return new Response("invalid signature", { status: 401 }); }
+            sigOk = sig.length === expected.length && timingSafeEqual(Buffer.from(sig), Buffer.from(expected));
+          } catch { sigOk = false; }
         }
 
-        let payload: unknown;
-        try { payload = JSON.parse(raw); } catch { return new Response("bad json", { status: 400 }); }
+        let payload: unknown = null;
+        try { payload = JSON.parse(raw); } catch { /* keep raw */ }
 
-        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-        await supabaseAdmin.from("events").insert({ type: "whatsapp.webhook", payload: payload as never });
+        await supabaseAdmin.from("events").insert({
+          type: sigOk ? "whatsapp.webhook" : "whatsapp.webhook.invalid_sig",
+          payload: (payload ?? { raw: raw.slice(0, 2000) }) as never,
+        });
+
+        if (!sigOk) return new Response("invalid signature", { status: 401 });
+
 
         // Best-effort: extract first message
         try {
