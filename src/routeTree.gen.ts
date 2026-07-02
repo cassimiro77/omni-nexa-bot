@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AppTrainingRouteImport } from './routes/app.training'
 import { Route as AppTemplatesRouteImport } from './routes/app.templates'
 import { Route as AppSettingsRouteImport } from './routes/app.settings'
 import { Route as AppIntegrationsRouteImport } from './routes/app.integrations'
@@ -39,6 +40,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AppTrainingRoute = AppTrainingRouteImport.update({
+  id: '/training',
+  path: '/training',
+  getParentRoute: () => AppRoute,
 } as any)
 const AppTemplatesRoute = AppTemplatesRouteImport.update({
   id: '/templates',
@@ -116,6 +122,7 @@ export interface FileRoutesByFullPath {
   '/app/integrations': typeof AppIntegrationsRoute
   '/app/settings': typeof AppSettingsRoute
   '/app/templates': typeof AppTemplatesRoute
+  '/app/training': typeof AppTrainingRoute
   '/api/public/cron/tick': typeof ApiPublicCronTickRoute
   '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
   '/api/public/meta/leads/webhook': typeof ApiPublicMetaLeadsWebhookRoute
@@ -133,6 +140,7 @@ export interface FileRoutesByTo {
   '/app/integrations': typeof AppIntegrationsRoute
   '/app/settings': typeof AppSettingsRoute
   '/app/templates': typeof AppTemplatesRoute
+  '/app/training': typeof AppTrainingRoute
   '/api/public/cron/tick': typeof ApiPublicCronTickRoute
   '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
   '/api/public/meta/leads/webhook': typeof ApiPublicMetaLeadsWebhookRoute
@@ -151,6 +159,7 @@ export interface FileRoutesById {
   '/app/integrations': typeof AppIntegrationsRoute
   '/app/settings': typeof AppSettingsRoute
   '/app/templates': typeof AppTemplatesRoute
+  '/app/training': typeof AppTrainingRoute
   '/api/public/cron/tick': typeof ApiPublicCronTickRoute
   '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
   '/api/public/meta/leads/webhook': typeof ApiPublicMetaLeadsWebhookRoute
@@ -170,6 +179,7 @@ export interface FileRouteTypes {
     | '/app/integrations'
     | '/app/settings'
     | '/app/templates'
+    | '/app/training'
     | '/api/public/cron/tick'
     | '/api/public/whatsapp/webhook'
     | '/api/public/meta/leads/webhook'
@@ -187,6 +197,7 @@ export interface FileRouteTypes {
     | '/app/integrations'
     | '/app/settings'
     | '/app/templates'
+    | '/app/training'
     | '/api/public/cron/tick'
     | '/api/public/whatsapp/webhook'
     | '/api/public/meta/leads/webhook'
@@ -204,6 +215,7 @@ export interface FileRouteTypes {
     | '/app/integrations'
     | '/app/settings'
     | '/app/templates'
+    | '/app/training'
     | '/api/public/cron/tick'
     | '/api/public/whatsapp/webhook'
     | '/api/public/meta/leads/webhook'
@@ -240,6 +252,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/app/training': {
+      id: '/app/training'
+      path: '/training'
+      fullPath: '/app/training'
+      preLoaderRoute: typeof AppTrainingRouteImport
+      parentRoute: typeof AppRoute
     }
     '/app/templates': {
       id: '/app/templates'
@@ -338,6 +357,7 @@ interface AppRouteChildren {
   AppIntegrationsRoute: typeof AppIntegrationsRoute
   AppSettingsRoute: typeof AppSettingsRoute
   AppTemplatesRoute: typeof AppTemplatesRoute
+  AppTrainingRoute: typeof AppTrainingRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -350,6 +370,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppIntegrationsRoute: AppIntegrationsRoute,
   AppSettingsRoute: AppSettingsRoute,
   AppTemplatesRoute: AppTemplatesRoute,
+  AppTrainingRoute: AppTrainingRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)

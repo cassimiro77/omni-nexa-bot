@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Copy, KeyRound, Webhook, Bot } from "lucide-react";
+import { Activity, Copy, KeyRound, Webhook, Bot } from "lucide-react";
 
 export const Route = createFileRoute("/app/settings")({ component: SettingsPage });
 
@@ -12,6 +12,19 @@ function SettingsPage() {
   const { data } = useQuery({
     queryKey: ["settings"],
     queryFn: async () => (await supabase.from("settings").select("*").eq("id", 1).single()).data,
+  });
+  const { data: lastWhatsappEvent } = useQuery({
+    queryKey: ["last-whatsapp-event"],
+    queryFn: async () => {
+      const { data: event } = await supabase
+        .from("events")
+        .select("created_at, type, payload")
+        .like("type", "whatsapp.%")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return event;
+    },
   });
 
   const [form, setForm] = useState({ business_name: "", ai_system_prompt: "", welcome_message: "", outbound_webhook_url: "" });
@@ -32,7 +45,8 @@ function SettingsPage() {
     qc.invalidateQueries({ queryKey: ["settings"] });
   }
 
-  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  const origin = "https://project--e0efd13b-a401-4810-b28e-430a1d408866.lovable.app";
+  const publicOrigin = "https://omni-nexa-bot.lovable.app";
   const waWebhook = `${origin}/api/public/whatsapp/webhook`;
   const leadsWebhook = `${origin}/api/public/meta/leads/webhook`;
 
@@ -71,9 +85,23 @@ function SettingsPage() {
 
         <Card icon={<KeyRound className="h-4 w-4" />} title="URLs de webhook (configure na Meta)">
           <ReadOnly label="WhatsApp Cloud API" value={waWebhook} onCopy={() => copy(waWebhook)} />
+          <ReadOnly label="WhatsApp Cloud API (domínio publicado)" value={`${publicOrigin}/api/public/whatsapp/webhook`} onCopy={() => copy(`${publicOrigin}/api/public/whatsapp/webhook`)} />
           <ReadOnly label="Meta Lead Ads" value={leadsWebhook} onCopy={() => copy(leadsWebhook)} />
           <p className="text-xs text-muted-foreground">
-            Modo mock ativo: os endpoints já estão publicados e aceitam chamadas de teste. Quando você cadastrar os secrets da Meta (META_WA_TOKEN, META_WA_PHONE_NUMBER_ID, META_WA_VERIFY_TOKEN, META_APP_SECRET), a verificação de assinatura e o envio real entram em produção.
+            Use uma dessas URLs públicas no painel da Meta. A URL do Preview ou da tela de login não deve ser usada como Callback URL.
+          </p>
+        </Card>
+
+        <Card icon={<Activity className="h-4 w-4" />} title="Diagnóstico WhatsApp">
+          <div className="rounded-md border border-border bg-background/50 p-3 text-sm">
+            <div className="font-medium">Última chamada recebida</div>
+            <div className="mt-1 text-xs text-muted-foreground">
+              {lastWhatsappEvent?.created_at ? new Date(lastWhatsappEvent.created_at).toLocaleString("pt-BR") : "Nenhuma chamada registrada"}
+            </div>
+            <div className="mt-2 text-xs text-muted-foreground">Tipo: {lastWhatsappEvent?.type ?? "—"}</div>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Se você enviar mensagem pelo WhatsApp e este horário não mudar, a Meta ainda não está chamando a URL correta do webhook.
           </p>
         </Card>
 
