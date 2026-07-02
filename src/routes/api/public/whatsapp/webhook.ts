@@ -64,6 +64,45 @@ export const Route = createFileRoute("/api/public/whatsapp/webhook")({
                     content: m.text?.body ?? "(sem texto)", wa_message_id: m.id,
                   });
                   await supabaseAdmin.from("contacts").update({ last_message_at: new Date().toISOString() }).eq("id", existing.id);
+
+                  // Auto-reply with AI (fire-and-forget, best effort)
+                  try {
+                    const { data: settings } = await supabaseAdmin.from("settings").select("ai_auto_reply, ai_system_prompt, business_name").eq("id", 1).maybeSingle();
+                    if (settings?.ai_auto_reply !== false) {
+                      const apiKey = process.env.LOVABLE_API_KEY;
+                      if (apiKey && m.from) {
+                        const { data: history } = await supabaseAdmin
+                          .from("messages").select("direction, content").eq("contact_id", existing.id)
+                          .order("created_at", { ascending: false }).limit(10);
+                        const msgs = [
+                          { role: "system", content: `${settings?.ai_system_prompt ?? "Você é um assistente comercial."} Negócio: ${settings?.business_name ?? "NexaBot"}. Responda curto, em português.` },
+                          ...[...(history ?? [])].reverse().map((h) => ({
+                            role: h.direction === "inbound" ? "user" : "assistant",
+                            content: h.content,
+                          })),
+                        ];
+                        const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+                          body: JSON.stringify({ model: "google/gemini-2.5-flash", messages: msgs }),
+                        });
+                        if (aiRes.ok) {
+                          const j = await aiRes.json() as { choices: { message: { content: string } }[] };
+                          const reply = j.choices?.[0]?.message?.content?.trim();
+                          if (reply) {
+                            const { sendWhatsAppText } = await import("@/lib/whatsapp.server");
+                            const send = await sendWhatsAppText(m.from, reply);
+                            await supabaseAdmin.from("messages").insert({
+                              contact_id: existing.id, direction: "outbound", channel: "whatsapp",
+                              content: reply, ai_used: true, wa_message_id: send.wa_message_id ?? null,
+                              metadata: { auto_reply: true, delivered: send.ok, error: send.error },
+                            });
+                            await supabaseAdmin.from("contacts").update({ last_message_at: new Date().toISOString(), status: "in_conversation" }).eq("id", existing.id);
+                          }
+                        }
+                      }
+                    }
+                  } catch (autoErr) { console.error("auto-reply", autoErr); }
                 }
               }
             }
