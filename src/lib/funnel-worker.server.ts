@@ -51,13 +51,24 @@ export async function tickFunnels(): Promise<{ advanced: number; completed: numb
         case "send_message": {
           const content = interpolate(step.content ?? "", ctx);
           if (content) {
+            let wa_message_id: string | null = null;
+            let delivered = false;
+            let sendError: string | undefined;
+            if (contact.phone) {
+              const { sendWhatsAppText } = await import("./whatsapp.server");
+              const r = await sendWhatsAppText(contact.phone, content);
+              delivered = r.ok;
+              wa_message_id = r.wa_message_id ?? null;
+              sendError = r.error;
+            }
             await supabaseAdmin.from("messages").insert({
               contact_id: run.contact_id,
               direction: "outbound",
               content,
               ai_used: false,
               channel: "whatsapp",
-              metadata: { source: "funnel", funnel_id: run.funnel_id },
+              wa_message_id,
+              metadata: { source: "funnel", funnel_id: run.funnel_id, delivered, error: sendError },
             });
             await supabaseAdmin.from("contacts").update({ last_message_at: nextRunAt.toISOString() }).eq("id", run.contact_id);
           }
