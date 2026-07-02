@@ -22,6 +22,7 @@ function Inbox() {
   const [aiLoading, setAiLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const aiReply = useServerFn(generateAIReply);
+  const sendWa = useServerFn(sendWhatsAppReply);
 
   const { data: contacts } = useQuery({
     queryKey: ["contacts-inbox"],
