@@ -96,10 +96,24 @@ function Inbox() {
     <div className="flex h-screen">
       {/* Contact list */}
       <div className="w-80 border-r border-border overflow-y-auto">
-        <div className="p-4 border-b border-border">
-          <h2 className="font-semibold">Inbox</h2>
-          <p className="text-xs text-muted-foreground">{contacts?.length ?? 0} conversas</p>
+        <div className="p-4 border-b border-border flex items-center justify-between">
+          <div>
+            <h2 className="font-semibold">Inbox</h2>
+            <p className="text-xs text-muted-foreground">{contacts?.length ?? 0} conversas</p>
+          </div>
+          <button
+            onClick={() => {
+              qc.invalidateQueries({ queryKey: ["contacts-inbox"] });
+              qc.invalidateQueries({ queryKey: ["messages", selectedId] });
+              toast.success("Atualizado");
+            }}
+            title="Atualizar"
+            className="rounded-md border border-border bg-card p-2 hover:bg-accent"
+          >
+            <RefreshCw className="h-4 w-4" />
+          </button>
         </div>
+
         {(contacts ?? []).map((c) => (
           <button key={c.id} onClick={() => setSelectedId(c.id)}
             className={`block w-full text-left px-4 py-3 border-b border-border/60 transition ${selectedId === c.id ? "bg-accent" : "hover:bg-accent/40"}`}>
