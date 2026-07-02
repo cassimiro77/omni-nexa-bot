@@ -9,7 +9,6 @@ export const generateAIReply = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => InputSchema.parse(data))
   .handler(async ({ data, context }) => {
     const apiKey = process.env.LOVABLE_API_KEY;
-    if (!apiKey) throw new Error("LOVABLE_API_KEY não configurada");
 
     const { supabase } = context;
     const { data: contact } = await supabase.from("contacts").select("*").eq("id", data.contactId).single();
@@ -31,6 +30,13 @@ export const generateAIReply = createServerFn({ method: "POST" })
     // If empty history, add a nudge
     if (history.length === 0) {
       messages.push({ role: "user", content: "Faça uma abordagem inicial cordial e pergunte o objetivo do lead." });
+    }
+
+    if (!apiKey) {
+      return {
+        reply: `Olá, ${contact?.name ?? "tudo bem"}! Posso te ajudar com uma demonstração, valores ou tirar dúvidas sobre a solução?`,
+        fallback: true,
+      };
     }
 
     const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
