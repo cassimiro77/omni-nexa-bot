@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Send, Sparkles, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 import { generateAIReply } from "@/lib/ai.functions";
+import { sendWhatsAppReply } from "@/lib/whatsapp.functions";
 import { useServerFn } from "@tanstack/react-start";
 import type { Database } from "@/integrations/supabase/types";
 
