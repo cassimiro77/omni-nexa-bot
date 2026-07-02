@@ -159,7 +159,7 @@ function Inbox() {
                 </button>
               </div>
               <p className="mt-2 text-[11px] text-muted-foreground">
-                Modo mock: mensagens ficam salvas no banco. Depois de plugar os secrets Meta, o envio real acontece via WhatsApp Cloud API.
+                Envio ao vivo via WhatsApp Cloud API. Mensagens ficam salvas no histórico do lead.
               </p>
             </div>
           </>
