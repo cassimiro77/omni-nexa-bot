@@ -86,7 +86,7 @@ function Inbox() {
     try {
       const res = await aiReply({ data: { contactId: selectedId } });
       setInput(res.reply);
-      toast.success("Sugestão da IA pronta");
+      toast.success(res.fallback ? "Sugestão pronta em modo seguro" : "Sugestão da IA pronta");
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "Erro na IA");
     } finally { setAiLoading(false); }

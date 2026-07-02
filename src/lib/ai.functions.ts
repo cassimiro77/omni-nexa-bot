@@ -41,11 +41,14 @@ export const generateAIReply = createServerFn({ method: "POST" })
 
     if (!res.ok) {
       const text = await res.text();
-      if (res.status === 429) throw new Error("Limite de uso da IA atingido. Tente novamente em instantes.");
-      if (res.status === 402) throw new Error("Créditos de IA esgotados. Adicione créditos no workspace.");
-      throw new Error(`IA falhou: ${res.status} ${text}`);
+      console.error("generateAIReply failed", { status: res.status, body: text.slice(0, 500) });
+      const leadName = contact?.name ?? "tudo bem";
+      return {
+        reply: `Olá, ${leadName}! Posso te ajudar com uma demonstração, valores ou tirar dúvidas sobre a solução?`,
+        fallback: true,
+      };
     }
     const json = (await res.json()) as { choices: { message: { content: string } }[] };
     const reply = json.choices?.[0]?.message?.content?.trim() ?? "";
-    return { reply };
+    return { reply: reply || "Olá! Como posso te ajudar hoje?", fallback: false };
   });
