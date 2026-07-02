@@ -67,8 +67,8 @@ export const Route = createFileRoute("/api/public/whatsapp/webhook")({
 
                   // Auto-reply with AI (fire-and-forget, best effort)
                   try {
-                    const { data: settings } = await supabaseAdmin.from("settings").select("ai_auto_reply, ai_system_prompt, business_name").eq("id", 1).maybeSingle();
-                    if (settings?.ai_auto_reply !== false) {
+                    const { data: settings } = await supabaseAdmin.from("settings").select("ai_system_prompt, business_name").eq("id", 1).maybeSingle();
+                    {
                       const apiKey = process.env.LOVABLE_API_KEY;
                       if (apiKey && m.from) {
                         const { data: history } = await supabaseAdmin
