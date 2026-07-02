@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Send, Sparkles, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 import { generateAIReply } from "@/lib/ai.functions";
+import { sendWhatsAppReply } from "@/lib/whatsapp.functions";
 import { useServerFn } from "@tanstack/react-start";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -21,6 +22,7 @@ function Inbox() {
   const [aiLoading, setAiLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const aiReply = useServerFn(generateAIReply);
+  const sendWa = useServerFn(sendWhatsAppReply);
 
   const { data: contacts } = useQuery({
     queryKey: ["contacts-inbox"],
@@ -68,15 +70,11 @@ function Inbox() {
     if (!selectedId || !content.trim()) return;
     setSending(true);
     try {
-      const { error } = await supabase.from("messages").insert({
-        contact_id: selectedId, direction: "outbound", content, ai_used: aiUsed, channel: "whatsapp",
-      });
-      if (error) throw error;
-      await supabase.from("contacts").update({ last_message_at: new Date().toISOString(), status: "in_conversation" }).eq("id", selectedId);
+      await sendWa({ data: { contactId: selectedId, content, aiUsed } });
       setInput("");
       qc.invalidateQueries({ queryKey: ["messages", selectedId] });
       qc.invalidateQueries({ queryKey: ["contacts-inbox"] });
-      toast.success("Mensagem registrada" + (aiUsed ? " (IA)" : ""));
+      toast.success("Enviado via WhatsApp" + (aiUsed ? " (IA)" : ""));
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "Erro ao enviar");
     } finally { setSending(false); }
@@ -161,7 +159,7 @@ function Inbox() {
                 </button>
               </div>
               <p className="mt-2 text-[11px] text-muted-foreground">
-                Modo mock: mensagens ficam salvas no banco. Depois de plugar os secrets Meta, o envio real acontece via WhatsApp Cloud API.
+                Envio ao vivo via WhatsApp Cloud API. Mensagens ficam salvas no histórico do lead.
               </p>
             </div>
           </>
