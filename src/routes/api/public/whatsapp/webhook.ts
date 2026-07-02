@@ -21,9 +21,9 @@ export const Route = createFileRoute("/api/public/whatsapp/webhook")({
         const raw = await request.text();
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-        // Always log the raw hit, for diagnostics. Meta's test console and some
-        // delivery retries may omit x-hub-signature-256, so we record signature
-        // status but do not block message ingestion.
+        // Always log the raw hit, for diagnostics. Meta's test console can omit
+        // x-hub-signature-256, so unsigned payloads are accepted only when they
+        // target this configured WhatsApp phone number.
         const sig = request.headers.get("x-hub-signature-256") ?? "";
         const appSecret = process.env.META_APP_SECRET;
         let sigOk = !appSecret;
@@ -38,14 +38,26 @@ export const Route = createFileRoute("/api/public/whatsapp/webhook")({
         let payload: unknown = null;
         try { payload = JSON.parse(raw); } catch { /* keep raw */ }
 
+        const expectedPhoneNumberId = process.env.META_WA_PHONE_NUMBER_ID;
+        const entriesForValidation = (payload as { entry?: unknown[] } | null)?.entry ?? [];
+        const isExpectedPhoneNumber = !expectedPhoneNumberId || entriesForValidation.some((entry) =>
+          (((entry as { changes?: unknown[] }).changes ?? []) as unknown[]).some((ch) =>
+            (ch as { value?: { metadata?: { phone_number_id?: string } } }).value?.metadata?.phone_number_id === expectedPhoneNumberId
+          )
+        );
+        const canProcess = sigOk || (!sig && isExpectedPhoneNumber);
+
         await supabaseAdmin.from("events").insert({
           type: sigOk ? "whatsapp.webhook" : "whatsapp.webhook.invalid_sig",
           payload: {
             signature_valid: sigOk,
             has_signature: Boolean(sig),
+            phone_number_valid: isExpectedPhoneNumber,
             body: payload ?? { raw: raw.slice(0, 2000) },
           } as never,
         });
+
+        if (!canProcess) return Response.json({ ok: true, ignored: "invalid_signature" });
 
 
         // Best-effort: extract first message
@@ -58,17 +70,22 @@ export const Route = createFileRoute("/api/public/whatsapp/webhook")({
               const messages = value?.messages ?? [];
               const waContact = value?.contacts?.[0];
               for (const msg of messages) {
-                const m = msg as { from?: string; text?: { body?: string }; id?: string };
-                if (!m.from) continue;
-                let { data: existing } = await supabaseAdmin.from("contacts").select("id").eq("phone", m.from).maybeSingle();
+                const m = msg as { from?: string; from_logical_id?: string; text?: { body?: string }; id?: string };
+                const from = m.from ?? waContact?.wa_id ?? m.from_logical_id;
+                if (!from) continue;
+                let { data: existing } = await supabaseAdmin.from("contacts").select("id").eq("phone", from).maybeSingle();
                 if (!existing) {
                   const ins = await supabaseAdmin.from("contacts").insert({
-                    phone: m.from, name: waContact?.profile?.name ?? m.from, origin: "whatsapp", status: "new",
+                    phone: from, name: waContact?.profile?.name ?? from, origin: "whatsapp", status: "new",
                     last_message_at: new Date().toISOString(),
                   }).select("id").single();
                   existing = ins.data;
                 }
                 if (existing) {
+                  if (m.id) {
+                    const { data: duplicate } = await supabaseAdmin.from("messages").select("id").eq("wa_message_id", m.id).maybeSingle();
+                    if (duplicate) continue;
+                  }
                   await supabaseAdmin.from("messages").insert({
                     contact_id: existing.id, direction: "inbound", channel: "whatsapp",
                     content: m.text?.body ?? "(sem texto)", wa_message_id: m.id,
@@ -80,7 +97,7 @@ export const Route = createFileRoute("/api/public/whatsapp/webhook")({
                     const { data: settings } = await supabaseAdmin.from("settings").select("ai_system_prompt, business_name").eq("id", 1).maybeSingle();
                     {
                       const apiKey = process.env.LOVABLE_API_KEY;
-                      if (apiKey && m.from) {
+                      if (apiKey && from) {
                         const { data: history } = await supabaseAdmin
                           .from("messages").select("direction, content").eq("contact_id", existing.id)
                           .order("created_at", { ascending: false }).limit(10);
@@ -101,7 +118,7 @@ export const Route = createFileRoute("/api/public/whatsapp/webhook")({
                           const reply = j.choices?.[0]?.message?.content?.trim();
                           if (reply) {
                             const { sendWhatsAppText } = await import("@/lib/whatsapp.server");
-                            const send = await sendWhatsAppText(m.from, reply);
+                            const send = await sendWhatsAppText(from, reply);
                             await supabaseAdmin.from("messages").insert({
                               contact_id: existing.id, direction: "outbound", channel: "whatsapp",
                               content: reply, ai_used: true, wa_message_id: send.wa_message_id ?? null,
