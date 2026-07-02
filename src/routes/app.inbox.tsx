@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Send, Sparkles, MessageSquare } from "lucide-react";
+import { Send, Sparkles, MessageSquare, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { generateAIReply } from "@/lib/ai.functions";
 import { sendWhatsAppReply } from "@/lib/whatsapp.functions";
