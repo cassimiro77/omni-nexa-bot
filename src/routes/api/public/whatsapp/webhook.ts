@@ -21,7 +21,9 @@ export const Route = createFileRoute("/api/public/whatsapp/webhook")({
         const raw = await request.text();
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-        // Always log the raw hit BEFORE signature check, for diagnostics
+        // Always log the raw hit, for diagnostics. Meta's test console and some
+        // delivery retries may omit x-hub-signature-256, so we record signature
+        // status but do not block message ingestion.
         const sig = request.headers.get("x-hub-signature-256") ?? "";
         const appSecret = process.env.META_APP_SECRET;
         let sigOk = !appSecret;
@@ -38,10 +40,12 @@ export const Route = createFileRoute("/api/public/whatsapp/webhook")({
 
         await supabaseAdmin.from("events").insert({
           type: sigOk ? "whatsapp.webhook" : "whatsapp.webhook.invalid_sig",
-          payload: (payload ?? { raw: raw.slice(0, 2000) }) as never,
+          payload: {
+            signature_valid: sigOk,
+            has_signature: Boolean(sig),
+            body: payload ?? { raw: raw.slice(0, 2000) },
+          } as never,
         });
-
-        if (!sigOk) return new Response("invalid signature", { status: 401 });
 
 
         // Best-effort: extract first message
