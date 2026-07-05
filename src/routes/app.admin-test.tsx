@@ -49,7 +49,9 @@ function AdminTestPage() {
     try {
       // Garante uma sessão válida antes de chamar o server fn (evita "Authentication Error")
       let { data: sess } = await supabase.auth.getSession();
-      if (!sess.session) {
+      const expiresAt = sess.session?.expires_at ? sess.session.expires_at * 1000 : 0;
+      const shouldRefresh = !sess.session || (expiresAt > 0 && expiresAt - Date.now() < 60_000);
+      if (shouldRefresh) {
         const refreshed = await supabase.auth.refreshSession();
         sess = { session: refreshed.data.session } as typeof sess;
       }
