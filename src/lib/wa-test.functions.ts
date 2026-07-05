@@ -1,8 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { createClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
 
 const schema = z.object({
+  accessToken: z.string().trim().min(20),
   name: z.string().trim().min(1).max(100),
   phone: z.string().trim().min(8).max(20),
   mode: z.enum(["freeform", "template"]),
@@ -12,10 +14,25 @@ const schema = z.object({
 });
 
 export const sendTestWhatsApp = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
   .inputValidator((raw: unknown) => schema.parse(raw))
-  .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
+  .handler(async ({ data }) => {
+    const SUPABASE_URL = process.env.SUPABASE_URL;
+    const SUPABASE_PUBLISHABLE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY;
+
+    if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
+      throw new Error("Backend indisponível. Verifique a conexão do projeto.");
+    }
+
+    const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+      global: { headers: { Authorization: `Bearer ${data.accessToken}` } },
+      auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
+    });
+
+    const { data: authData, error: authError } = await supabase.auth.getUser(data.accessToken);
+    const userId = authData.user?.id;
+    if (authError || !userId) {
+      throw new Error("Sessão inválida ou expirada. Faça login novamente.");
+    }
 
     // Admin only
     const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: userId, _role: "admin" });
