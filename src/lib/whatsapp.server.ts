@@ -42,6 +42,32 @@ export async function sendWhatsAppAudioLink(to: string, link: string): Promise<{
   return { ok: true, wa_message_id: json.messages?.[0]?.id };
 }
 
+export async function sendWhatsAppTemplate(
+  to: string,
+  templateName: string,
+  languageCode = "en_US",
+): Promise<{ ok: boolean; wa_message_id?: string; error?: string }> {
+  const token = process.env.META_WA_TOKEN;
+  const phoneId = process.env.META_WA_PHONE_NUMBER_ID;
+  if (!token || !phoneId) return { ok: false, error: "META secrets ausentes" };
+  const clean = to.replace(/[^\d]/g, "");
+  const res = await fetch(`${GRAPH}/${phoneId}/messages`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({
+      messaging_product: "whatsapp",
+      to: clean,
+      type: "template",
+      template: { name: templateName, language: { code: languageCode } },
+    }),
+  });
+  const json = (await res.json().catch(() => ({}))) as { messages?: { id: string }[]; error?: { message?: string } };
+  if (!res.ok) return { ok: false, error: json?.error?.message ?? `HTTP ${res.status}` };
+  return { ok: true, wa_message_id: json.messages?.[0]?.id };
+}
+
+
+
 // Downloads a WhatsApp media file (voice notes/audio) as a Buffer + mime.
 export async function downloadWhatsAppMedia(mediaId: string): Promise<{ ok: boolean; data?: ArrayBuffer; mime?: string; error?: string }> {
   const token = process.env.META_WA_TOKEN;
