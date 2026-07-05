@@ -113,7 +113,7 @@ const JS = `(function(){
 })();
 `;
 
-export const Route = createFileRoute("/api/public/widget/embed[.]js")({
+export const Route = createFileRoute("/api/public/widget/embed.js")({
   server: {
     handlers: {
       GET: async () =>
