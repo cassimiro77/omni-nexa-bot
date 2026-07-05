@@ -67,11 +67,11 @@ export const sendTestWhatsApp = createServerFn({ method: "POST" })
       channel: "whatsapp",
       direction: "outbound",
       content: bodyLogged,
-      status: result.ok ? "sent" : "failed",
+      wa_message_id: result.wa_message_id ?? null,
       metadata: {
         source: "admin_test",
         mode: data.mode,
-        wa_message_id: result.wa_message_id ?? null,
+        ok: result.ok,
         error: result.error ?? null,
       },
     });
