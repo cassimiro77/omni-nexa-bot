@@ -12,6 +12,13 @@ const schema = z.object({
   languageCode: z.string().trim().max(10).optional(),
 });
 
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Nexabot-Auth, X-Requested-With, Accept, Origin",
+  "Access-Control-Max-Age": "86400",
+} as const;
+
 function isNewSupabaseApiKey(value: string): boolean {
   return value.startsWith("sb_publishable_") || value.startsWith("sb_secret_");
 }
@@ -35,13 +42,18 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
   };
 }
 
+function json(data: unknown, status = 200) {
+  return Response.json(data, { status, headers: corsHeaders });
+}
+
 function jsonError(message: string, status = 400) {
-  return Response.json({ ok: false, message }, { status });
+  return json({ ok: false, message }, status);
 }
 
 export const Route = createFileRoute("/api/public/admin-test/send")({
   server: {
     handlers: {
+      OPTIONS: async () => new Response(null, { status: 204, headers: corsHeaders }),
       POST: async ({ request }) => {
         const SUPABASE_URL = process.env.SUPABASE_URL;
         const SUPABASE_PUBLISHABLE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY;
@@ -50,7 +62,13 @@ export const Route = createFileRoute("/api/public/admin-test/send")({
           return jsonError("Backend indisponível. Verifique a conexão do projeto.", 500);
         }
 
-        const authHeader = request.headers.get("authorization") ?? "";
+        const authHeader = request.headers.get("authorization") ?? request.headers.get("x-nexabot-auth") ?? "";
+        console.info("[admin-test-send] auth headers", {
+          hasAuthorization: Boolean(request.headers.get("authorization")),
+          hasFallbackAuth: Boolean(request.headers.get("x-nexabot-auth")),
+          contentType: request.headers.get("content-type"),
+          origin: request.headers.get("origin"),
+        });
         if (!authHeader.startsWith("Bearer ")) {
           return jsonError("Sessão não enviada. Faça login novamente e tente de novo.", 401);
         }
@@ -161,7 +179,7 @@ export const Route = createFileRoute("/api/public/admin-test/send")({
         if (messageError) console.error("[admin-test-send] message log failed", { message: messageError.message });
 
         if (!result.ok) return jsonError(result.error ?? "Falha no envio pelo WhatsApp.", 502);
-        return Response.json({ ok: true, contactId, waMessageId: result.wa_message_id ?? null });
+        return json({ ok: true, contactId, waMessageId: result.wa_message_id ?? null });
       },
     },
   },
