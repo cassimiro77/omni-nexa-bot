@@ -13,7 +13,13 @@ function TrainingPage() {
   const fileRef = useRef<HTMLInputElement>(null);
   const loadTraining = useServerFn(getBotTraining);
   const saveTraining = useServerFn(saveBotTraining);
-  const [form, setForm] = useState({ businessName: "", welcomeMessage: "", botScript: "", replyWithAudio: false });
+  const [form, setForm] = useState({
+    businessName: "",
+    welcomeMessage: "",
+    botScript: "",
+    replyWithAudio: false,
+    sourcePrompts: [] as { source: string; prompt: string }[],
+  });
 
   const { data, isLoading } = useQuery({
     queryKey: ["bot-training"],
@@ -27,6 +33,12 @@ function TrainingPage() {
       welcomeMessage: data.welcomeMessage,
       botScript: data.botScript,
       replyWithAudio: data.replyWithAudio,
+      sourcePrompts: data.sourcePrompts?.length
+        ? data.sourcePrompts
+        : [
+            { source: "nexalytix", prompt: "" },
+            { source: "bolo-memoria", prompt: "" },
+          ],
     });
   }, [data]);
 
@@ -121,6 +133,62 @@ function TrainingPage() {
             </div>
           </div>
         </div>
+
+        <div className="lg:col-span-2 rounded-xl border border-border bg-card p-5">
+          <div className="mb-3 flex items-center gap-2 text-sm font-medium">
+            <span className="grid h-7 w-7 place-items-center rounded-md bg-primary/10 text-primary"><Sparkles className="h-4 w-4" /></span>
+            Base de conhecimento por site (widget)
+          </div>
+          <p className="text-xs text-muted-foreground mb-4">
+            Instruções específicas por origem. O widget envia <code>data-source</code> e o bot combina o roteiro principal + este contexto.
+          </p>
+          <div className="space-y-3">
+            {form.sourcePrompts.map((sp, idx) => (
+              <div key={idx} className="rounded-md border border-border p-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <input
+                    value={sp.source}
+                    onChange={(e) => {
+                      const next = [...form.sourcePrompts];
+                      next[idx] = { ...next[idx], source: e.target.value };
+                      setForm({ ...form, sourcePrompts: next });
+                    }}
+                    placeholder="ex.: nexalytix, bolo-memoria"
+                    className="w-52 rounded-md border border-input bg-background px-2 py-1 text-xs font-mono"
+                    maxLength={40}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setForm({ ...form, sourcePrompts: form.sourcePrompts.filter((_, i) => i !== idx) })}
+                    className="ml-auto text-xs text-muted-foreground hover:text-destructive"
+                  >
+                    remover
+                  </button>
+                </div>
+                <textarea
+                  value={sp.prompt}
+                  onChange={(e) => {
+                    const next = [...form.sourcePrompts];
+                    next[idx] = { ...next[idx], prompt: e.target.value };
+                    setForm({ ...form, sourcePrompts: next });
+                  }}
+                  rows={4}
+                  maxLength={4000}
+                  placeholder="Contexto específico deste site: produto, tom de voz, palavras a evitar, dados a coletar…"
+                  className={inputCls}
+                />
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={() => setForm({ ...form, sourcePrompts: [...form.sourcePrompts, { source: "", prompt: "" }] })}
+              className="rounded-md border border-dashed border-border px-3 py-2 text-xs text-muted-foreground hover:bg-accent"
+            >
+              + Adicionar site
+            </button>
+          </div>
+        </div>
+
 
         <aside className="space-y-4">
           <div className="rounded-xl border border-border bg-card p-5">

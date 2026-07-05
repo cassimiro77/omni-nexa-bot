@@ -439,6 +439,7 @@ export type Database = {
           id: number
           outbound_webhook_url: string | null
           reply_with_audio: boolean
+          source_prompts: Json
           updated_at: string
           welcome_message: string | null
         }
@@ -448,6 +449,7 @@ export type Database = {
           id?: number
           outbound_webhook_url?: string | null
           reply_with_audio?: boolean
+          source_prompts?: Json
           updated_at?: string
           welcome_message?: string | null
         }
@@ -457,6 +459,7 @@ export type Database = {
           id?: number
           outbound_webhook_url?: string | null
           reply_with_audio?: boolean
+          source_prompts?: Json
           updated_at?: string
           welcome_message?: string | null
         }

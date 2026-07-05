@@ -50,6 +50,7 @@ export const Route = createFileRoute("/api/public/widget/chat")({
           .maybeSingle();
 
         let contactId = existing?.id as string | undefined;
+        let justCapturedEmail = false;
         if (!contactId) {
           const { data: ins, error: insErr } = await supabaseAdmin
             .from("contacts")
@@ -64,7 +65,9 @@ export const Route = createFileRoute("/api/public/widget/chat")({
             .single();
           if (insErr) return Response.json({ error: insErr.message }, { status: 500, headers: CORS });
           contactId = ins.id;
+          if (email) justCapturedEmail = true;
         } else if (name || email) {
+          if (email && !existing?.email) justCapturedEmail = true;
           await supabaseAdmin
             .from("contacts")
             .update({
@@ -72,6 +75,19 @@ export const Route = createFileRoute("/api/public/widget/chat")({
               email: email ?? existing?.email ?? null,
             })
             .eq("id", contactId);
+        }
+
+        // Fire-and-forget: send contact confirmation the first time we see an email
+        if (justCapturedEmail && email) {
+          const siteName = source === "nexalytix" ? "Nexalytix" : source === "bolo-memoria" ? "Bolo & Memória" : "NexaBot";
+          import("@/lib/email-internal.server").then(({ enqueueTransactionalEmail }) =>
+            enqueueTransactionalEmail({
+              templateName: "contact-confirmation",
+              recipientEmail: email,
+              templateData: { name: name ?? undefined, siteName },
+              label: `contact-confirmation:${source}`,
+            }).catch((err) => console.error("contact-confirmation enqueue failed", err)),
+          );
         }
 
         // Store inbound message
@@ -108,18 +124,20 @@ export const Route = createFileRoute("/api/public/widget/chat")({
 
         const { data: settings } = await supabaseAdmin
           .from("settings")
-          .select("ai_system_prompt, business_name, welcome_message")
+          .select("ai_system_prompt, business_name, welcome_message, source_prompts")
           .eq("id", 1)
           .maybeSingle();
 
+        const sourcePrompts = (settings?.source_prompts as Record<string, string> | null) ?? {};
         const brandHint =
-          source === "nexalytix"
-            ? "Você atende visitantes do site Nexalytix (analytics/BI). Foque em qualificar o lead e explicar valor de forma curta."
+          sourcePrompts[source] ||
+          (source === "nexalytix"
+            ? "Você atende visitantes do site Nexalytix (analytics/BI)."
             : source === "bolo-memoria" || source === "bolo_memoria" || source === "bolo-e-memoria"
-              ? "Você atende clientes da confeitaria Bolo & Memória. Ajude com sabores, encomendas e agendamento."
-              : `Você atende visitantes do site (${source}).`;
+              ? "Você atende clientes da confeitaria Bolo & Memória."
+              : `Você atende visitantes do site (${source}).`);
 
-        const sys = `${settings?.ai_system_prompt ?? "Você é um assistente cordial."} ${brandHint} Negócio: ${settings?.business_name ?? "NexaBot"}. Responda em português, curto e direto. Se o cliente pedir atendente humano, confirme que vai transferir e responda apenas: "Ok, vou chamar um atendente. Aguarde um momento."`;
+        const sys = `${settings?.ai_system_prompt ?? "Você é um assistente cordial."}\n\n[Contexto do site — ${source}]\n${brandHint}\n\nNegócio: ${settings?.business_name ?? "NexaBot"}. Responda em português, curto e direto. Se o cliente pedir atendente humano, confirme que vai transferir e responda apenas: "Ok, vou chamar um atendente. Aguarde um momento."`;
 
         const msgs = [
           { role: "system" as const, content: sys },
