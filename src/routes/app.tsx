@@ -1,7 +1,7 @@
 import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { LayoutDashboard, Inbox, Users, GitBranch, Settings, LogOut, Bot, Plug, FileText, BarChart3, ShieldCheck, BrainCircuit } from "lucide-react";
+import { LayoutDashboard, Inbox, Users, GitBranch, Settings, LogOut, Bot, Plug, FileText, BarChart3, ShieldCheck, BrainCircuit, Send } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
 
 export const Route = createFileRoute("/app")({ component: AppLayout });
@@ -15,6 +15,7 @@ const NAV = [
   { to: "/app/templates", label: "Templates", icon: FileText },
   { to: "/app/integrations", label: "Integrações", icon: Plug },
   { to: "/app/analytics", label: "Analytics", icon: BarChart3 },
+  { to: "/app/admin-test", label: "Teste de Envio", icon: Send },
   { to: "/app/admin", label: "Admin", icon: ShieldCheck },
   { to: "/app/settings", label: "Configurações", icon: Settings },
 ] as const;
