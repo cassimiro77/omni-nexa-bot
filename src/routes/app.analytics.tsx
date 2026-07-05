@@ -71,11 +71,12 @@ function AnalyticsPage() {
         <p className="text-sm text-muted-foreground">Métricas dos últimos 30 dias.</p>
       </header>
 
-      <div className="grid gap-4 md:grid-cols-4 mb-6">
+      <div className="grid gap-4 md:grid-cols-5 mb-6">
         <Metric icon={<Users className="h-4 w-4" />} label="Leads" value={contacts.length} accent="text-primary" />
         <Metric icon={<TrendingUp className="h-4 w-4" />} label="Taxa de conversão" value={`${conversionRate}%`} accent="text-success" />
         <Metric icon={<MessageCircle className="h-4 w-4" />} label="Mensagens" value={inbound + outbound} sub={`${inbound} in · ${outbound} out`} />
         <Metric icon={<Zap className="h-4 w-4" />} label="Respostas IA" value={`${aiRate}%`} sub={`${aiMsgs} de ${outbound}`} accent="text-primary" />
+        <Metric icon={<Star className="h-4 w-4" />} label="NPS" value={nps?.total ? nps.nps : "—"} sub={nps?.total ? `${nps.total} resp · média ${nps.avg}` : "sem respostas"} accent="text-success" />
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 mb-6">
