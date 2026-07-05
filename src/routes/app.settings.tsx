@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Activity, Copy, KeyRound, Webhook, Bot } from "lucide-react";
+import { Activity, Copy, KeyRound, Webhook, Bot, Mail } from "lucide-react";
 
 export const Route = createFileRoute("/app/settings")({ component: SettingsPage });
 
