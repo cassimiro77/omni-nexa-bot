@@ -26,6 +26,7 @@ function TrainingPage() {
       businessName: data.businessName,
       welcomeMessage: data.welcomeMessage,
       botScript: data.botScript,
+      replyWithAudio: data.replyWithAudio,
     });
   }, [data]);
 
