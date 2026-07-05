@@ -23,6 +23,7 @@ import { Route as AppContactsRouteImport } from './routes/app.contacts'
 import { Route as AppAnalyticsRouteImport } from './routes/app.analytics'
 import { Route as AppAdminTestRouteImport } from './routes/app.admin-test'
 import { Route as AppAdminRouteImport } from './routes/app.admin'
+import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
 import { Route as ApiPublicWidgetEmbedDotjsRouteImport } from './routes/api/public/widget/embed[.]js'
 import { Route as ApiPublicWidgetChatRouteImport } from './routes/api/public/widget/chat'
 import { Route as ApiPublicWhatsappWebhookRouteImport } from './routes/api/public/whatsapp/webhook'
@@ -99,6 +100,12 @@ const AppAdminRoute = AppAdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => AppRoute,
 } as any)
+const LovableEmailQueueProcessRoute =
+  LovableEmailQueueProcessRouteImport.update({
+    id: '/lovable/email/queue/process',
+    path: '/lovable/email/queue/process',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicWidgetEmbedDotjsRoute =
   ApiPublicWidgetEmbedDotjsRouteImport.update({
     id: '/api/public/widget/embed.js',
@@ -147,6 +154,7 @@ export interface FileRoutesByFullPath {
   '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
   '/api/public/widget/chat': typeof ApiPublicWidgetChatRoute
   '/api/public/widget/embed.js': typeof ApiPublicWidgetEmbedDotjsRoute
+  '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/api/public/meta/leads/webhook': typeof ApiPublicMetaLeadsWebhookRoute
 }
 export interface FileRoutesByTo {
@@ -168,6 +176,7 @@ export interface FileRoutesByTo {
   '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
   '/api/public/widget/chat': typeof ApiPublicWidgetChatRoute
   '/api/public/widget/embed.js': typeof ApiPublicWidgetEmbedDotjsRoute
+  '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/api/public/meta/leads/webhook': typeof ApiPublicMetaLeadsWebhookRoute
 }
 export interface FileRoutesById {
@@ -190,6 +199,7 @@ export interface FileRoutesById {
   '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
   '/api/public/widget/chat': typeof ApiPublicWidgetChatRoute
   '/api/public/widget/embed.js': typeof ApiPublicWidgetEmbedDotjsRoute
+  '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/api/public/meta/leads/webhook': typeof ApiPublicMetaLeadsWebhookRoute
 }
 export interface FileRouteTypes {
@@ -213,6 +223,7 @@ export interface FileRouteTypes {
     | '/api/public/whatsapp/webhook'
     | '/api/public/widget/chat'
     | '/api/public/widget/embed.js'
+    | '/lovable/email/queue/process'
     | '/api/public/meta/leads/webhook'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -234,6 +245,7 @@ export interface FileRouteTypes {
     | '/api/public/whatsapp/webhook'
     | '/api/public/widget/chat'
     | '/api/public/widget/embed.js'
+    | '/lovable/email/queue/process'
     | '/api/public/meta/leads/webhook'
   id:
     | '__root__'
@@ -255,6 +267,7 @@ export interface FileRouteTypes {
     | '/api/public/whatsapp/webhook'
     | '/api/public/widget/chat'
     | '/api/public/widget/embed.js'
+    | '/lovable/email/queue/process'
     | '/api/public/meta/leads/webhook'
   fileRoutesById: FileRoutesById
 }
@@ -266,6 +279,7 @@ export interface RootRouteChildren {
   ApiPublicWhatsappWebhookRoute: typeof ApiPublicWhatsappWebhookRoute
   ApiPublicWidgetChatRoute: typeof ApiPublicWidgetChatRoute
   ApiPublicWidgetEmbedDotjsRoute: typeof ApiPublicWidgetEmbedDotjsRoute
+  LovableEmailQueueProcessRoute: typeof LovableEmailQueueProcessRoute
   ApiPublicMetaLeadsWebhookRoute: typeof ApiPublicMetaLeadsWebhookRoute
 }
 
@@ -369,6 +383,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAdminRouteImport
       parentRoute: typeof AppRoute
     }
+    '/lovable/email/queue/process': {
+      id: '/lovable/email/queue/process'
+      path: '/lovable/email/queue/process'
+      fullPath: '/lovable/email/queue/process'
+      preLoaderRoute: typeof LovableEmailQueueProcessRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/widget/embed.js': {
       id: '/api/public/widget/embed.js'
       path: '/api/public/widget/embed.js'
@@ -445,6 +466,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicWhatsappWebhookRoute: ApiPublicWhatsappWebhookRoute,
   ApiPublicWidgetChatRoute: ApiPublicWidgetChatRoute,
   ApiPublicWidgetEmbedDotjsRoute: ApiPublicWidgetEmbedDotjsRoute,
+  LovableEmailQueueProcessRoute: LovableEmailQueueProcessRoute,
   ApiPublicMetaLeadsWebhookRoute: ApiPublicMetaLeadsWebhookRoute,
 }
 export const routeTree = rootRouteImport
