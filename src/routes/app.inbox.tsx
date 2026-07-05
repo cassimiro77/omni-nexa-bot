@@ -141,10 +141,45 @@ function Inbox() {
                 <div className="font-medium">{selected.name ?? selected.phone}</div>
                 <div className="text-xs text-muted-foreground">{selected.phone} · {selected.origin}</div>
               </div>
-              <div className="flex gap-1">
+              <div className="flex items-center gap-2">
                 {(selected.tags ?? []).map((t) => (
                   <span key={t} className="rounded-md bg-primary/10 px-2 py-0.5 text-xs text-primary">{t}</span>
                 ))}
+                {selected.status === "human" ? (
+                  <button
+                    onClick={async () => {
+                      await release({ data: { contactId: selected.id } });
+                      qc.invalidateQueries({ queryKey: ["contacts-inbox"] });
+                      toast.success("Bot reativado");
+                    }}
+                    className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-accent"
+                    title="Devolver ao bot"
+                  ><Bot className="h-3 w-3" /> Devolver ao bot</button>
+                ) : (
+                  <button
+                    onClick={async () => {
+                      await takeOver({ data: { contactId: selected.id } });
+                      qc.invalidateQueries({ queryKey: ["contacts-inbox"] });
+                      toast.success("Você assumiu o atendimento");
+                    }}
+                    className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-accent"
+                    title="Assumir atendimento"
+                  ><UserCheck className="h-3 w-3" /> Assumir</button>
+                )}
+                <button
+                  onClick={async () => {
+                    try {
+                      await sendNps({ data: { contactId: selected.id } });
+                      qc.invalidateQueries({ queryKey: ["messages", selected.id] });
+                      qc.invalidateQueries({ queryKey: ["contacts-inbox"] });
+                      toast.success("Pesquisa NPS enviada");
+                    } catch (e) {
+                      toast.error(e instanceof Error ? e.message : "Erro ao enviar NPS");
+                    }
+                  }}
+                  className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-accent"
+                  title="Encerrar e enviar NPS"
+                ><Star className="h-3 w-3" /> NPS</button>
               </div>
             </header>
             <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-3">
