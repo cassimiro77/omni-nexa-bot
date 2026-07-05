@@ -108,15 +108,17 @@ function SettingsPage() {
         <Card icon={<Mail className="h-4 w-4" />} title="Domínio de e-mail">
           <p className="text-sm text-muted-foreground">
             Configure um domínio próprio para enviar e-mails (ex.: <code>notify.seusite.com</code>). Necessário para
-            campanhas transacionais e para responder tickets de suporte por e-mail.
+            e-mails transacionais e para responder tickets por e-mail.
           </p>
-          <presentation-actions>
-            <presentation-open-email-setup>Configurar domínio de e-mail</presentation-open-email-setup>
-          </presentation-actions>
-          <p className="text-xs text-muted-foreground">
-            Após concluir, acompanhe a verificação em <strong>Cloud → Emails</strong>. DNS pode levar até 72h.
-          </p>
+          <ol className="ml-5 list-decimal text-sm text-muted-foreground space-y-1">
+            <li>Peça ao assistente Lovable: <em>"configurar domínio de e-mail"</em>.</li>
+            <li>No diálogo, informe o subdomínio (ex.: <code>notify.seudominio.com</code>).</li>
+            <li>Adicione os registros NS no seu provedor de DNS.</li>
+            <li>Acompanhe o status em <strong>Cloud → Emails</strong> (até 72h para propagar).</li>
+          </ol>
         </Card>
+
+
 
 
 
