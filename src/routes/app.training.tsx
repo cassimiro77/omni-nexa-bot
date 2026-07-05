@@ -13,7 +13,13 @@ function TrainingPage() {
   const fileRef = useRef<HTMLInputElement>(null);
   const loadTraining = useServerFn(getBotTraining);
   const saveTraining = useServerFn(saveBotTraining);
-  const [form, setForm] = useState({ businessName: "", welcomeMessage: "", botScript: "", replyWithAudio: false });
+  const [form, setForm] = useState({
+    businessName: "",
+    welcomeMessage: "",
+    botScript: "",
+    replyWithAudio: false,
+    sourcePrompts: [] as { source: string; prompt: string }[],
+  });
 
   const { data, isLoading } = useQuery({
     queryKey: ["bot-training"],
@@ -27,6 +33,12 @@ function TrainingPage() {
       welcomeMessage: data.welcomeMessage,
       botScript: data.botScript,
       replyWithAudio: data.replyWithAudio,
+      sourcePrompts: data.sourcePrompts?.length
+        ? data.sourcePrompts
+        : [
+            { source: "nexalytix", prompt: "" },
+            { source: "bolo-memoria", prompt: "" },
+          ],
     });
   }, [data]);
 
