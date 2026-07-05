@@ -35,6 +35,7 @@ import { Route as ApiPublicWidgetEmbedDotjsRouteImport } from './routes/api/publ
 import { Route as ApiPublicWidgetChatRouteImport } from './routes/api/public/widget/chat'
 import { Route as ApiPublicWhatsappWebhookRouteImport } from './routes/api/public/whatsapp/webhook'
 import { Route as ApiPublicCronTickRouteImport } from './routes/api/public/cron.tick'
+import { Route as ApiPublicAdminTestSendRouteImport } from './routes/api/public/admin-test/send'
 import { Route as ApiPublicMetaLeadsWebhookRouteImport } from './routes/api/public/meta/leads/webhook'
 
 const UnsubscribeRoute = UnsubscribeRouteImport.update({
@@ -172,6 +173,11 @@ const ApiPublicCronTickRoute = ApiPublicCronTickRouteImport.update({
   path: '/api/public/cron/tick',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicAdminTestSendRoute = ApiPublicAdminTestSendRouteImport.update({
+  id: '/api/public/admin-test/send',
+  path: '/api/public/admin-test/send',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicMetaLeadsWebhookRoute =
   ApiPublicMetaLeadsWebhookRouteImport.update({
     id: '/api/public/meta/leads/webhook',
@@ -197,6 +203,7 @@ export interface FileRoutesByFullPath {
   '/app/training': typeof AppTrainingRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
+  '/api/public/admin-test/send': typeof ApiPublicAdminTestSendRoute
   '/api/public/cron/tick': typeof ApiPublicCronTickRoute
   '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
   '/api/public/widget/chat': typeof ApiPublicWidgetChatRoute
@@ -226,6 +233,7 @@ export interface FileRoutesByTo {
   '/app/training': typeof AppTrainingRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
+  '/api/public/admin-test/send': typeof ApiPublicAdminTestSendRoute
   '/api/public/cron/tick': typeof ApiPublicCronTickRoute
   '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
   '/api/public/widget/chat': typeof ApiPublicWidgetChatRoute
@@ -256,6 +264,7 @@ export interface FileRoutesById {
   '/app/training': typeof AppTrainingRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
+  '/api/public/admin-test/send': typeof ApiPublicAdminTestSendRoute
   '/api/public/cron/tick': typeof ApiPublicCronTickRoute
   '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
   '/api/public/widget/chat': typeof ApiPublicWidgetChatRoute
@@ -287,6 +296,7 @@ export interface FileRouteTypes {
     | '/app/training'
     | '/email/unsubscribe'
     | '/lovable/email/suppression'
+    | '/api/public/admin-test/send'
     | '/api/public/cron/tick'
     | '/api/public/whatsapp/webhook'
     | '/api/public/widget/chat'
@@ -316,6 +326,7 @@ export interface FileRouteTypes {
     | '/app/training'
     | '/email/unsubscribe'
     | '/lovable/email/suppression'
+    | '/api/public/admin-test/send'
     | '/api/public/cron/tick'
     | '/api/public/whatsapp/webhook'
     | '/api/public/widget/chat'
@@ -345,6 +356,7 @@ export interface FileRouteTypes {
     | '/app/training'
     | '/email/unsubscribe'
     | '/lovable/email/suppression'
+    | '/api/public/admin-test/send'
     | '/api/public/cron/tick'
     | '/api/public/whatsapp/webhook'
     | '/api/public/widget/chat'
@@ -364,6 +376,7 @@ export interface RootRouteChildren {
   UnsubscribeRoute: typeof UnsubscribeRoute
   EmailUnsubscribeRoute: typeof EmailUnsubscribeRoute
   LovableEmailSuppressionRoute: typeof LovableEmailSuppressionRoute
+  ApiPublicAdminTestSendRoute: typeof ApiPublicAdminTestSendRoute
   ApiPublicCronTickRoute: typeof ApiPublicCronTickRoute
   ApiPublicWhatsappWebhookRoute: typeof ApiPublicWhatsappWebhookRoute
   ApiPublicWidgetChatRoute: typeof ApiPublicWidgetChatRoute
@@ -560,6 +573,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicCronTickRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/admin-test/send': {
+      id: '/api/public/admin-test/send'
+      path: '/api/public/admin-test/send'
+      fullPath: '/api/public/admin-test/send'
+      preLoaderRoute: typeof ApiPublicAdminTestSendRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/meta/leads/webhook': {
       id: '/api/public/meta/leads/webhook'
       path: '/api/public/meta/leads/webhook'
@@ -607,6 +627,7 @@ const rootRouteChildren: RootRouteChildren = {
   UnsubscribeRoute: UnsubscribeRoute,
   EmailUnsubscribeRoute: EmailUnsubscribeRoute,
   LovableEmailSuppressionRoute: LovableEmailSuppressionRoute,
+  ApiPublicAdminTestSendRoute: ApiPublicAdminTestSendRoute,
   ApiPublicCronTickRoute: ApiPublicCronTickRoute,
   ApiPublicWhatsappWebhookRoute: ApiPublicWhatsappWebhookRoute,
   ApiPublicWidgetChatRoute: ApiPublicWidgetChatRoute,
