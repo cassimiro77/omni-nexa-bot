@@ -13,7 +13,7 @@ function TrainingPage() {
   const fileRef = useRef<HTMLInputElement>(null);
   const loadTraining = useServerFn(getBotTraining);
   const saveTraining = useServerFn(saveBotTraining);
-  const [form, setForm] = useState({ businessName: "", welcomeMessage: "", botScript: "" });
+  const [form, setForm] = useState({ businessName: "", welcomeMessage: "", botScript: "", replyWithAudio: false });
 
   const { data, isLoading } = useQuery({
     queryKey: ["bot-training"],
