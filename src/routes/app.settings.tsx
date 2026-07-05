@@ -105,6 +105,21 @@ function SettingsPage() {
           </p>
         </Card>
 
+        <Card icon={<Mail className="h-4 w-4" />} title="Domínio de e-mail">
+          <p className="text-sm text-muted-foreground">
+            Configure um domínio próprio para enviar e-mails (ex.: <code>notify.seusite.com</code>). Necessário para
+            campanhas transacionais e para responder tickets de suporte por e-mail.
+          </p>
+          <presentation-actions>
+            <presentation-open-email-setup>Configurar domínio de e-mail</presentation-open-email-setup>
+          </presentation-actions>
+          <p className="text-xs text-muted-foreground">
+            Após concluir, acompanhe a verificação em <strong>Cloud → Emails</strong>. DNS pode levar até 72h.
+          </p>
+        </Card>
+
+
+
         <div>
           <button onClick={save} className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">Salvar alterações</button>
         </div>
