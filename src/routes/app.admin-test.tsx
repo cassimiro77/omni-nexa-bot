@@ -180,9 +180,52 @@ function AdminTestPage() {
         <ul className="list-disc pl-5 space-y-1">
           <li>O contato é criado automaticamente no CRM com origem <code>admin_test</code>.</li>
           <li>Envios ficam registrados no Inbox e nas mensagens do contato.</li>
-          <li>E-mail e widget embutido para Nexalytix / Bolo & Memória entram nas próximas fases.</li>
+          <li>E-mail entra na próxima fase (após configurar domínio de e-mail).</li>
         </ul>
+      </div>
+
+      <div className="mt-6 rounded-xl border border-border bg-card p-5">
+        <p className="font-medium mb-2">Widget de chat para outros sites</p>
+        <p className="text-sm text-muted-foreground mb-3">
+          Copie o snippet e cole antes de <code>&lt;/body&gt;</code> no site correspondente. Conversas chegam no
+          Inbox com a origem indicada.
+        </p>
+        <WidgetSnippets />
       </div>
     </div>
   );
 }
+
+function WidgetSnippets() {
+  const base = typeof window !== "undefined" ? window.location.origin : "https://omni-nexa-bot.lovable.app";
+  const sites: { source: string; label: string; title: string; color: string }[] = [
+    { source: "nexalytix", label: "Nexalytix", title: "Nexalytix — Fale com a gente", color: "#2563eb" },
+    { source: "bolo-memoria", label: "Bolo & Memória", title: "Bolo & Memória — Pedidos", color: "#db2777" },
+  ];
+  return (
+    <div className="space-y-4">
+      {sites.map((s) => {
+        const snippet = `<script src="${base}/api/public/widget/embed.js" data-source="${s.source}" data-title="${s.title}" data-color="${s.color}" defer></script>`;
+        return (
+          <div key={s.source} className="rounded-md border border-border bg-background p-3">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium">{s.label}</span>
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(snippet);
+                  toast.success(`Snippet ${s.label} copiado`);
+                }}
+                className="text-xs rounded-md border border-border px-2 py-1 hover:bg-accent/40"
+              >
+                Copiar
+              </button>
+            </div>
+            <pre className="text-[11px] leading-relaxed overflow-x-auto text-muted-foreground">{snippet}</pre>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
