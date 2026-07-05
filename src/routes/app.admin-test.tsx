@@ -25,7 +25,7 @@ function AdminTestPage() {
 
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [mode, setMode] = useState<"freeform" | "template">("freeform");
+  const [mode, setMode] = useState<"freeform" | "template">("template");
   const [message, setMessage] = useState("Olá! Esta é uma mensagem de teste do NexaBot.");
   const [templateName, setTemplateName] = useState("hello_world");
   const [languageCode, setLanguageCode] = useState("en_US");

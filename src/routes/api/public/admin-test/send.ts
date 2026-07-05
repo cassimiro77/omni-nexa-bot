@@ -56,12 +56,13 @@ export const Route = createFileRoute("/api/public/admin-test/send")({
     handlers: {
       OPTIONS: async () => new Response(null, { status: 204, headers: corsHeaders }),
       POST: async ({ request }) => {
-        const SUPABASE_URL = process.env.SUPABASE_URL;
-        const SUPABASE_PUBLISHABLE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY;
+        try {
+          const SUPABASE_URL = process.env.SUPABASE_URL;
+          const SUPABASE_PUBLISHABLE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY;
 
-        if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
-          return jsonError("Backend indisponível. Verifique a conexão do projeto.", 500);
-        }
+          if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
+            return jsonError("Backend indisponível. Verifique a conexão do projeto.", 500);
+          }
 
         let body: unknown;
         try {
@@ -102,27 +103,29 @@ export const Route = createFileRoute("/api/public/admin-test/send")({
           auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
         });
 
-        const { data: authData, error: authError } = await supabase.auth.getUser(token);
-        const userId = authData.user?.id;
-        if (authError || !userId) {
-          console.error("[admin-test-send] invalid user token", { message: authError?.message });
-          return jsonError("Sessão inválida ou expirada. Faça login novamente.", 401);
-        }
+          const { data: authData, error: authError } = await supabase.auth.getUser(token);
+          const userId = authData.user?.id;
+          console.info("[admin-test-send] user validation", { ok: Boolean(userId), error: authError?.message ?? null });
+          if (authError || !userId) {
+            console.error("[admin-test-send] invalid user token", { message: authError?.message });
+            return jsonError("Sessão inválida ou expirada. Faça login novamente.", 401);
+          }
 
-        const { data: isAdmin, error: roleError } = await supabase.rpc("has_role", {
-          _user_id: userId,
-          _role: "admin",
-        });
-        if (roleError) {
-          console.error("[admin-test-send] role check failed", { message: roleError.message });
-          return jsonError("Não foi possível validar seu perfil administrativo.", 403);
-        }
-        if (!isAdmin) return jsonError("Acesso restrito a administradores.", 403);
+          const { data: isAdmin, error: roleError } = await supabase.rpc("has_role", {
+            _user_id: userId,
+            _role: "admin",
+          });
+          console.info("[admin-test-send] role validation", { isAdmin: Boolean(isAdmin), error: roleError?.message ?? null });
+          if (roleError) {
+            console.error("[admin-test-send] role check failed", { message: roleError.message });
+            return jsonError("Não foi possível validar seu perfil administrativo.", 403);
+          }
+          if (!isAdmin) return jsonError("Acesso restrito a administradores.", 403);
 
         const phoneClean = data.phone.replace(/[^\d]/g, "");
         if (phoneClean.length < 8) return jsonError("Telefone inválido.", 400);
 
-        const { sendWhatsAppText, sendWhatsAppTemplate } = await import("@/lib/whatsapp.server");
+          const { sendWhatsAppText, sendWhatsAppTemplate } = await import("@/lib/whatsapp.server");
 
         const { data: existing, error: existingError } = await supabase
           .from("contacts")
@@ -152,7 +155,7 @@ export const Route = createFileRoute("/api/public/admin-test/send")({
         }
 
         let bodyLogged = "";
-        const result = data.mode === "freeform"
+          const result = data.mode === "freeform"
           ? await (async () => {
               const msg = (data.message ?? "").trim();
               if (!msg) return { ok: false, error: "Mensagem obrigatória no modo livre." };
@@ -165,6 +168,12 @@ export const Route = createFileRoute("/api/public/admin-test/send")({
               bodyLogged = `[template:${tpl}/${lang}]`;
               return sendWhatsAppTemplate(phoneClean, tpl, lang);
             })();
+          console.info("[admin-test-send] whatsapp result", {
+            ok: result.ok,
+            hasMessageId: Boolean(result.wa_message_id),
+            error: result.error ?? null,
+            mode: data.mode,
+          });
 
         const { error: messageError } = await supabase.from("messages").insert({
           contact_id: contactId,
@@ -181,8 +190,13 @@ export const Route = createFileRoute("/api/public/admin-test/send")({
         });
         if (messageError) console.error("[admin-test-send] message log failed", { message: messageError.message });
 
-        if (!result.ok) return jsonError(result.error ?? "Falha no envio pelo WhatsApp.", 502);
-        return json({ ok: true, contactId, waMessageId: result.wa_message_id ?? null });
+          if (!result.ok) return jsonError(result.error ?? "Falha no envio pelo WhatsApp.", 502);
+          return json({ ok: true, contactId, waMessageId: result.wa_message_id ?? null });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "Erro interno no envio de teste.";
+          console.error("[admin-test-send] unhandled error", { message, name: error instanceof Error ? error.name : typeof error });
+          return jsonError(`Erro interno no envio: ${message}`, 500);
+        }
       },
     },
   },

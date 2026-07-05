@@ -1,25 +1,51 @@
 // WhatsApp Cloud API helpers — server-only.
 const GRAPH = "https://graph.facebook.com/v21.0";
 
+type MetaError = {
+  message?: string;
+  type?: string;
+  code?: number;
+  error_subcode?: number;
+  fbtrace_id?: string;
+};
+
+function formatMetaError(error: MetaError | undefined, status: number): string {
+  const raw = error?.message ?? `HTTP ${status}`;
+  const authLike = /auth|oauth|token|permission|access/i.test(raw) || error?.code === 190;
+  if (authLike) {
+    return `Credencial da Meta/WhatsApp inválida ou sem permissão. Detalhe Meta: ${raw}`;
+  }
+  return raw;
+}
+
 export async function sendWhatsAppText(to: string, body: string): Promise<{ ok: boolean; wa_message_id?: string; error?: string }> {
   const token = process.env.META_WA_TOKEN;
   const phoneId = process.env.META_WA_PHONE_NUMBER_ID;
   if (!token || !phoneId) return { ok: false, error: "META secrets ausentes" };
 
   const clean = to.replace(/[^\d]/g, "");
-  const res = await fetch(`${GRAPH}/${phoneId}/messages`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-    body: JSON.stringify({
-      messaging_product: "whatsapp",
-      to: clean,
-      type: "text",
-      text: { preview_url: false, body },
-    }),
-  });
-  const json = (await res.json().catch(() => ({}))) as { messages?: { id: string }[]; error?: { message?: string } };
-  if (!res.ok) return { ok: false, error: json?.error?.message ?? `HTTP ${res.status}` };
-  return { ok: true, wa_message_id: json.messages?.[0]?.id };
+  try {
+    const res = await fetch(`${GRAPH}/${phoneId}/messages`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        to: clean,
+        type: "text",
+        text: { preview_url: false, body },
+      }),
+    });
+    const json = (await res.json().catch(() => ({}))) as { messages?: { id: string }[]; error?: MetaError };
+    if (!res.ok) {
+      console.error("[whatsapp] text send failed", { status: res.status, error: json.error });
+      return { ok: false, error: formatMetaError(json.error, res.status) };
+    }
+    return { ok: true, wa_message_id: json.messages?.[0]?.id };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Falha de rede ao chamar Meta.";
+    console.error("[whatsapp] text send exception", { message });
+    return { ok: false, error: `Falha de rede ao chamar Meta: ${message}` };
+  }
 }
 
 export async function sendWhatsAppAudioLink(to: string, link: string): Promise<{ ok: boolean; wa_message_id?: string; error?: string }> {
@@ -51,19 +77,28 @@ export async function sendWhatsAppTemplate(
   const phoneId = process.env.META_WA_PHONE_NUMBER_ID;
   if (!token || !phoneId) return { ok: false, error: "META secrets ausentes" };
   const clean = to.replace(/[^\d]/g, "");
-  const res = await fetch(`${GRAPH}/${phoneId}/messages`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-    body: JSON.stringify({
-      messaging_product: "whatsapp",
-      to: clean,
-      type: "template",
-      template: { name: templateName, language: { code: languageCode } },
-    }),
-  });
-  const json = (await res.json().catch(() => ({}))) as { messages?: { id: string }[]; error?: { message?: string } };
-  if (!res.ok) return { ok: false, error: json?.error?.message ?? `HTTP ${res.status}` };
-  return { ok: true, wa_message_id: json.messages?.[0]?.id };
+  try {
+    const res = await fetch(`${GRAPH}/${phoneId}/messages`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        to: clean,
+        type: "template",
+        template: { name: templateName, language: { code: languageCode } },
+      }),
+    });
+    const json = (await res.json().catch(() => ({}))) as { messages?: { id: string }[]; error?: MetaError };
+    if (!res.ok) {
+      console.error("[whatsapp] template send failed", { status: res.status, error: json.error, templateName, languageCode });
+      return { ok: false, error: formatMetaError(json.error, res.status) };
+    }
+    return { ok: true, wa_message_id: json.messages?.[0]?.id };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Falha de rede ao chamar Meta.";
+    console.error("[whatsapp] template send exception", { message, templateName, languageCode });
+    return { ok: false, error: `Falha de rede ao chamar Meta: ${message}` };
+  }
 }
 
 
