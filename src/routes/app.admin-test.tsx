@@ -58,6 +58,7 @@ function AdminTestPage() {
         return;
       }
 
+      const accessToken = sess.session.access_token;
       const res = await send({
         data: {
           name: name.trim(),
@@ -67,6 +68,7 @@ function AdminTestPage() {
           templateName: mode === "template" ? templateName : undefined,
           languageCode: mode === "template" ? languageCode : undefined,
         },
+        headers: { Authorization: `Bearer ${accessToken}` },
       });
       toast.success(`Enviado! WA id: ${res.waMessageId ?? "-"}`);
     } catch (err) {
