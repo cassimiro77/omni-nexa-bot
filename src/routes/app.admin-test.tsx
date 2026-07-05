@@ -47,6 +47,17 @@ function AdminTestPage() {
     if (!name.trim() || !phone.trim()) return toast.error("Preencha nome e telefone.");
     setSending(true);
     try {
+      // Garante uma sessão válida antes de chamar o server fn (evita "Authentication Error")
+      let { data: sess } = await supabase.auth.getSession();
+      if (!sess.session) {
+        const refreshed = await supabase.auth.refreshSession();
+        sess = { session: refreshed.data.session } as typeof sess;
+      }
+      if (!sess.session?.access_token) {
+        toast.error("Sessão expirada. Faça login novamente para enviar.");
+        return;
+      }
+
       const res = await send({
         data: {
           name: name.trim(),
@@ -59,7 +70,13 @@ function AdminTestPage() {
       });
       toast.success(`Enviado! WA id: ${res.waMessageId ?? "-"}`);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Falha no envio.");
+      const msg = err instanceof Error ? err.message : "Falha no envio.";
+      console.error("[admin-test] erro no envio:", err);
+      if (/unauthorized|authentication|no authorization/i.test(msg)) {
+        toast.error("Sessão expirada. Faça login novamente e tente de novo.");
+      } else {
+        toast.error(msg);
+      }
     } finally {
       setSending(false);
     }
