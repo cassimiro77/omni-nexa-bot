@@ -4,6 +4,7 @@ import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
 
 const schema = z.object({
+  sessionToken: z.string().trim().min(20).optional(),
   name: z.string().trim().min(1).max(100),
   phone: z.string().trim().min(8).max(20),
   mode: z.enum(["freeform", "template"]),
@@ -11,6 +12,13 @@ const schema = z.object({
   templateName: z.string().trim().max(80).optional(),
   languageCode: z.string().trim().max(10).optional(),
 });
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Nexabot-Auth, X-Requested-With, Accept, Origin",
+  "Access-Control-Max-Age": "86400",
+} as const;
 
 function isNewSupabaseApiKey(value: string): boolean {
   return value.startsWith("sb_publishable_") || value.startsWith("sb_secret_");
@@ -35,29 +43,24 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
   };
 }
 
+function json(data: unknown, status = 200) {
+  return Response.json(data, { status, headers: corsHeaders });
+}
+
 function jsonError(message: string, status = 400) {
-  return Response.json({ ok: false, message }, { status });
+  return json({ ok: false, message }, status);
 }
 
 export const Route = createFileRoute("/api/public/admin-test/send")({
   server: {
     handlers: {
+      OPTIONS: async () => new Response(null, { status: 204, headers: corsHeaders }),
       POST: async ({ request }) => {
         const SUPABASE_URL = process.env.SUPABASE_URL;
         const SUPABASE_PUBLISHABLE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY;
 
         if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
           return jsonError("Backend indisponível. Verifique a conexão do projeto.", 500);
-        }
-
-        const authHeader = request.headers.get("authorization") ?? "";
-        if (!authHeader.startsWith("Bearer ")) {
-          return jsonError("Sessão não enviada. Faça login novamente e tente de novo.", 401);
-        }
-
-        const token = authHeader.replace("Bearer ", "").trim();
-        if (!token || token.split(".").length !== 3) {
-          return jsonError("Sessão inválida. Faça login novamente e tente de novo.", 401);
         }
 
         let body: unknown;
@@ -73,6 +76,24 @@ export const Route = createFileRoute("/api/public/admin-test/send")({
         }
 
         const data = parsed.data;
+        const authHeader = request.headers.get("authorization") ?? request.headers.get("x-nexabot-auth") ?? "";
+        const bodyToken = data.sessionToken?.trim() ?? "";
+        const token = authHeader.startsWith("Bearer ") ? authHeader.replace("Bearer ", "").trim() : bodyToken;
+        console.info("[admin-test-send] auth debug", {
+          hasAuthorizationHeader: Boolean(request.headers.get("authorization")),
+          hasFallbackHeader: Boolean(request.headers.get("x-nexabot-auth")),
+          hasBodyToken: Boolean(bodyToken),
+          tokenParts: token ? token.split(".").length : 0,
+          contentType: request.headers.get("content-type"),
+          origin: request.headers.get("origin"),
+        });
+        if (!token) {
+          return jsonError("Sessão não enviada. Faça login novamente e tente de novo.", 401);
+        }
+        if (token.split(".").length !== 3) {
+          return jsonError("Sessão inválida. Faça login novamente e tente de novo.", 401);
+        }
+
         const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
           global: {
             fetch: createSupabaseFetch(SUPABASE_PUBLISHABLE_KEY),
@@ -161,7 +182,7 @@ export const Route = createFileRoute("/api/public/admin-test/send")({
         if (messageError) console.error("[admin-test-send] message log failed", { message: messageError.message });
 
         if (!result.ok) return jsonError(result.error ?? "Falha no envio pelo WhatsApp.", 502);
-        return Response.json({ ok: true, contactId, waMessageId: result.wa_message_id ?? null });
+        return json({ ok: true, contactId, waMessageId: result.wa_message_id ?? null });
       },
     },
   },

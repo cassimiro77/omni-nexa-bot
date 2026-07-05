@@ -57,13 +57,30 @@ function AdminTestPage() {
       }
 
       const accessToken = sess.session.access_token;
+      const { data: userData, error: userError } = await supabase.auth.getUser(accessToken);
+      console.info("[admin-test] auth debug", {
+        hasSession: Boolean(sess.session),
+        hasAccessToken: Boolean(accessToken),
+        tokenParts: accessToken.split(".").length,
+        expiresInSeconds: sess.session.expires_at ? Math.round(sess.session.expires_at - Date.now() / 1000) : null,
+        userValidated: Boolean(userData.user),
+        userError: userError?.message ?? null,
+      });
+      if (userError || !userData.user) {
+        toast.error("Sua sessão local existe, mas não foi validada. Entre novamente.");
+        return;
+      }
+
       const response = await fetch("/api/public/admin-test/send", {
         method: "POST",
         headers: {
+          Accept: "application/json",
           "Content-Type": "application/json",
           Authorization: `Bearer ${accessToken}`,
+          "X-Nexabot-Auth": `Bearer ${accessToken}`,
         },
         body: JSON.stringify({
+          sessionToken: accessToken,
           name: name.trim(),
           phone: phone.trim(),
           mode,
@@ -73,6 +90,7 @@ function AdminTestPage() {
         }),
       });
       const res = (await response.json().catch(() => null)) as { ok?: boolean; message?: string; waMessageId?: string | null } | null;
+      console.info("[admin-test] send response", { status: response.status, ok: response.ok, message: res?.message ?? null });
       if (!response.ok || !res?.ok) {
         throw new Error(res?.message ?? `Falha no envio (${response.status}).`);
       }
@@ -80,11 +98,7 @@ function AdminTestPage() {
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Falha no envio.";
       console.error("[admin-test] erro no envio:", err);
-      if (/unauthorized|authentication|no authorization/i.test(msg)) {
-        toast.error("Sessão não enviada ao backend. Recarregue a página e tente novamente.");
-      } else {
-        toast.error(msg);
-      }
+      toast.error(msg);
     } finally {
       setSending(false);
     }
