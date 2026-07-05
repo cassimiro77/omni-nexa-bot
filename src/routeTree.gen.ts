@@ -21,6 +21,7 @@ import { Route as AppFunnelsRouteImport } from './routes/app.funnels'
 import { Route as AppDashboardRouteImport } from './routes/app.dashboard'
 import { Route as AppContactsRouteImport } from './routes/app.contacts'
 import { Route as AppAnalyticsRouteImport } from './routes/app.analytics'
+import { Route as AppAdminTestRouteImport } from './routes/app.admin-test'
 import { Route as AppAdminRouteImport } from './routes/app.admin'
 import { Route as ApiPublicWhatsappWebhookRouteImport } from './routes/api/public/whatsapp/webhook'
 import { Route as ApiPublicCronTickRouteImport } from './routes/api/public/cron.tick'
@@ -86,6 +87,11 @@ const AppAnalyticsRoute = AppAnalyticsRouteImport.update({
   path: '/analytics',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAdminTestRoute = AppAdminTestRouteImport.update({
+  id: '/admin-test',
+  path: '/admin-test',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppAdminRoute = AppAdminRouteImport.update({
   id: '/admin',
   path: '/admin',
@@ -114,6 +120,7 @@ export interface FileRoutesByFullPath {
   '/app': typeof AppRouteWithChildren
   '/auth': typeof AuthRoute
   '/app/admin': typeof AppAdminRoute
+  '/app/admin-test': typeof AppAdminTestRoute
   '/app/analytics': typeof AppAnalyticsRoute
   '/app/contacts': typeof AppContactsRoute
   '/app/dashboard': typeof AppDashboardRoute
@@ -132,6 +139,7 @@ export interface FileRoutesByTo {
   '/app': typeof AppRouteWithChildren
   '/auth': typeof AuthRoute
   '/app/admin': typeof AppAdminRoute
+  '/app/admin-test': typeof AppAdminTestRoute
   '/app/analytics': typeof AppAnalyticsRoute
   '/app/contacts': typeof AppContactsRoute
   '/app/dashboard': typeof AppDashboardRoute
@@ -151,6 +159,7 @@ export interface FileRoutesById {
   '/app': typeof AppRouteWithChildren
   '/auth': typeof AuthRoute
   '/app/admin': typeof AppAdminRoute
+  '/app/admin-test': typeof AppAdminTestRoute
   '/app/analytics': typeof AppAnalyticsRoute
   '/app/contacts': typeof AppContactsRoute
   '/app/dashboard': typeof AppDashboardRoute
@@ -171,6 +180,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/auth'
     | '/app/admin'
+    | '/app/admin-test'
     | '/app/analytics'
     | '/app/contacts'
     | '/app/dashboard'
@@ -189,6 +199,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/auth'
     | '/app/admin'
+    | '/app/admin-test'
     | '/app/analytics'
     | '/app/contacts'
     | '/app/dashboard'
@@ -207,6 +218,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/auth'
     | '/app/admin'
+    | '/app/admin-test'
     | '/app/analytics'
     | '/app/contacts'
     | '/app/dashboard'
@@ -316,6 +328,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAnalyticsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/admin-test': {
+      id: '/app/admin-test'
+      path: '/admin-test'
+      fullPath: '/app/admin-test'
+      preLoaderRoute: typeof AppAdminTestRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/admin': {
       id: '/app/admin'
       path: '/admin'
@@ -349,6 +368,7 @@ declare module '@tanstack/react-router' {
 
 interface AppRouteChildren {
   AppAdminRoute: typeof AppAdminRoute
+  AppAdminTestRoute: typeof AppAdminTestRoute
   AppAnalyticsRoute: typeof AppAnalyticsRoute
   AppContactsRoute: typeof AppContactsRoute
   AppDashboardRoute: typeof AppDashboardRoute
@@ -362,6 +382,7 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   AppAdminRoute: AppAdminRoute,
+  AppAdminTestRoute: AppAdminTestRoute,
   AppAnalyticsRoute: AppAnalyticsRoute,
   AppContactsRoute: AppContactsRoute,
   AppDashboardRoute: AppDashboardRoute,
