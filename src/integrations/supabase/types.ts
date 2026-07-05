@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       contacts: {
         Row: {
+          awaiting_nps: boolean
           created_at: string
           email: string | null
           id: string
@@ -29,6 +30,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          awaiting_nps?: boolean
           created_at?: string
           email?: string | null
           id?: string
@@ -42,6 +44,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          awaiting_nps?: boolean
           created_at?: string
           email?: string | null
           id?: string
@@ -289,6 +292,38 @@ export type Database = {
           },
         ]
       }
+      nps_responses: {
+        Row: {
+          comment: string | null
+          contact_id: string
+          created_at: string
+          id: string
+          score: number
+        }
+        Insert: {
+          comment?: string | null
+          contact_id: string
+          created_at?: string
+          id?: string
+          score: number
+        }
+        Update: {
+          comment?: string | null
+          contact_id?: string
+          created_at?: string
+          id?: string
+          score?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nps_responses_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -316,6 +351,7 @@ export type Database = {
           business_name: string | null
           id: number
           outbound_webhook_url: string | null
+          reply_with_audio: boolean
           updated_at: string
           welcome_message: string | null
         }
@@ -324,6 +360,7 @@ export type Database = {
           business_name?: string | null
           id?: number
           outbound_webhook_url?: string | null
+          reply_with_audio?: boolean
           updated_at?: string
           welcome_message?: string | null
         }
@@ -332,6 +369,7 @@ export type Database = {
           business_name?: string | null
           id?: number
           outbound_webhook_url?: string | null
+          reply_with_audio?: boolean
           updated_at?: string
           welcome_message?: string | null
         }
