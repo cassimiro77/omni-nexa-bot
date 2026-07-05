@@ -29,6 +29,7 @@ function Inbox() {
   const release = useServerFn(releaseToBot);
   const sendNps = useServerFn(sendNPSInvite);
 
+  const { data: contacts } = useQuery({
     queryKey: ["contacts-inbox"],
     queryFn: async () => {
       const { data } = await supabase.from("contacts").select("*").order("last_message_at", { ascending: false, nullsFirst: false });
