@@ -23,6 +23,7 @@ import { Route as AppContactsRouteImport } from './routes/app.contacts'
 import { Route as AppAnalyticsRouteImport } from './routes/app.analytics'
 import { Route as AppAdminTestRouteImport } from './routes/app.admin-test'
 import { Route as AppAdminRouteImport } from './routes/app.admin'
+import { Route as ApiPublicWidgetChatRouteImport } from './routes/api/public/widget/chat'
 import { Route as ApiPublicWhatsappWebhookRouteImport } from './routes/api/public/whatsapp/webhook'
 import { Route as ApiPublicCronTickRouteImport } from './routes/api/public/cron.tick'
 import { Route as ApiPublicMetaLeadsWebhookRouteImport } from './routes/api/public/meta/leads/webhook'
@@ -97,6 +98,11 @@ const AppAdminRoute = AppAdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => AppRoute,
 } as any)
+const ApiPublicWidgetChatRoute = ApiPublicWidgetChatRouteImport.update({
+  id: '/api/public/widget/chat',
+  path: '/api/public/widget/chat',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicWhatsappWebhookRoute =
   ApiPublicWhatsappWebhookRouteImport.update({
     id: '/api/public/whatsapp/webhook',
@@ -132,6 +138,7 @@ export interface FileRoutesByFullPath {
   '/app/training': typeof AppTrainingRoute
   '/api/public/cron/tick': typeof ApiPublicCronTickRoute
   '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
+  '/api/public/widget/chat': typeof ApiPublicWidgetChatRoute
   '/api/public/meta/leads/webhook': typeof ApiPublicMetaLeadsWebhookRoute
 }
 export interface FileRoutesByTo {
@@ -151,6 +158,7 @@ export interface FileRoutesByTo {
   '/app/training': typeof AppTrainingRoute
   '/api/public/cron/tick': typeof ApiPublicCronTickRoute
   '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
+  '/api/public/widget/chat': typeof ApiPublicWidgetChatRoute
   '/api/public/meta/leads/webhook': typeof ApiPublicMetaLeadsWebhookRoute
 }
 export interface FileRoutesById {
@@ -171,6 +179,7 @@ export interface FileRoutesById {
   '/app/training': typeof AppTrainingRoute
   '/api/public/cron/tick': typeof ApiPublicCronTickRoute
   '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
+  '/api/public/widget/chat': typeof ApiPublicWidgetChatRoute
   '/api/public/meta/leads/webhook': typeof ApiPublicMetaLeadsWebhookRoute
 }
 export interface FileRouteTypes {
@@ -192,6 +201,7 @@ export interface FileRouteTypes {
     | '/app/training'
     | '/api/public/cron/tick'
     | '/api/public/whatsapp/webhook'
+    | '/api/public/widget/chat'
     | '/api/public/meta/leads/webhook'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -211,6 +221,7 @@ export interface FileRouteTypes {
     | '/app/training'
     | '/api/public/cron/tick'
     | '/api/public/whatsapp/webhook'
+    | '/api/public/widget/chat'
     | '/api/public/meta/leads/webhook'
   id:
     | '__root__'
@@ -230,6 +241,7 @@ export interface FileRouteTypes {
     | '/app/training'
     | '/api/public/cron/tick'
     | '/api/public/whatsapp/webhook'
+    | '/api/public/widget/chat'
     | '/api/public/meta/leads/webhook'
   fileRoutesById: FileRoutesById
 }
@@ -239,6 +251,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   ApiPublicCronTickRoute: typeof ApiPublicCronTickRoute
   ApiPublicWhatsappWebhookRoute: typeof ApiPublicWhatsappWebhookRoute
+  ApiPublicWidgetChatRoute: typeof ApiPublicWidgetChatRoute
   ApiPublicMetaLeadsWebhookRoute: typeof ApiPublicMetaLeadsWebhookRoute
 }
 
@@ -342,6 +355,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAdminRouteImport
       parentRoute: typeof AppRoute
     }
+    '/api/public/widget/chat': {
+      id: '/api/public/widget/chat'
+      path: '/api/public/widget/chat'
+      fullPath: '/api/public/widget/chat'
+      preLoaderRoute: typeof ApiPublicWidgetChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/whatsapp/webhook': {
       id: '/api/public/whatsapp/webhook'
       path: '/api/public/whatsapp/webhook'
@@ -402,6 +422,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   ApiPublicCronTickRoute: ApiPublicCronTickRoute,
   ApiPublicWhatsappWebhookRoute: ApiPublicWhatsappWebhookRoute,
+  ApiPublicWidgetChatRoute: ApiPublicWidgetChatRoute,
   ApiPublicMetaLeadsWebhookRoute: ApiPublicMetaLeadsWebhookRoute,
 }
 export const routeTree = rootRouteImport
