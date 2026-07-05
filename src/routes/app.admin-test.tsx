@@ -52,7 +52,7 @@ function AdminTestPage() {
         sess = { session: refreshed.data.session } as typeof sess;
       }
       if (!sess.session?.access_token) {
-        toast.error("Sessão expirada. Faça login novamente para enviar.");
+        toast.error("Sessão local não encontrada. Recarregue a página ou entre novamente.");
         return;
       }
 
@@ -81,7 +81,7 @@ function AdminTestPage() {
       const msg = err instanceof Error ? err.message : "Falha no envio.";
       console.error("[admin-test] erro no envio:", err);
       if (/unauthorized|authentication|no authorization/i.test(msg)) {
-        toast.error("Sessão expirada. Faça login novamente e tente de novo.");
+        toast.error("Sessão não enviada ao backend. Recarregue a página e tente novamente.");
       } else {
         toast.error(msg);
       }
