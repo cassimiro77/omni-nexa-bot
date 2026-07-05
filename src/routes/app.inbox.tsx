@@ -25,8 +25,10 @@ function Inbox() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const aiReply = useServerFn(generateAIReply);
   const sendWa = useServerFn(sendWhatsAppReply);
+  const takeOver = useServerFn(takeOverContact);
+  const release = useServerFn(releaseToBot);
+  const sendNps = useServerFn(sendNPSInvite);
 
-  const { data: contacts } = useQuery({
     queryKey: ["contacts-inbox"],
     queryFn: async () => {
       const { data } = await supabase.from("contacts").select("*").order("last_message_at", { ascending: false, nullsFirst: false });
