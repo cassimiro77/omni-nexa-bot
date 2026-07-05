@@ -1,17 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
-import { sendTestWhatsApp } from "@/lib/wa-test.functions";
 import { toast } from "sonner";
 import { Send, MessageSquare, FileCode } from "lucide-react";
 
 export const Route = createFileRoute("/app/admin-test")({ component: AdminTestPage });
 
 function AdminTestPage() {
-  const send = useServerFn(sendTestWhatsApp);
-
   const { data: isAdmin, isLoading } = useQuery({
     queryKey: ["is-admin"],
     queryFn: async () => {
@@ -47,7 +43,7 @@ function AdminTestPage() {
     if (!name.trim() || !phone.trim()) return toast.error("Preencha nome e telefone.");
     setSending(true);
     try {
-      // Garante uma sessão válida antes de chamar o server fn (evita "Authentication Error")
+      // Garante uma sessão válida antes de chamar o endpoint de envio.
       let { data: sess } = await supabase.auth.getSession();
       const expiresAt = sess.session?.expires_at ? sess.session.expires_at * 1000 : 0;
       const shouldRefresh = !sess.session || (expiresAt > 0 && expiresAt - Date.now() < 60_000);
@@ -61,17 +57,25 @@ function AdminTestPage() {
       }
 
       const accessToken = sess.session.access_token;
-      const res = await send({
-        data: {
-          accessToken,
+      const response = await fetch("/api/public/admin-test/send", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
           name: name.trim(),
           phone: phone.trim(),
           mode,
           message: mode === "freeform" ? message : undefined,
           templateName: mode === "template" ? templateName : undefined,
           languageCode: mode === "template" ? languageCode : undefined,
-        },
+        }),
       });
+      const res = (await response.json().catch(() => null)) as { ok?: boolean; message?: string; waMessageId?: string | null } | null;
+      if (!response.ok || !res?.ok) {
+        throw new Error(res?.message ?? `Falha no envio (${response.status}).`);
+      }
       toast.success(`Enviado! WA id: ${res.waMessageId ?? "-"}`);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Falha no envio.";
