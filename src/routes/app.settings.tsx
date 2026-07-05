@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Activity, Copy, KeyRound, Webhook, Bot } from "lucide-react";
+import { Activity, Copy, KeyRound, Webhook, Bot, Mail } from "lucide-react";
 
 export const Route = createFileRoute("/app/settings")({ component: SettingsPage });
 
@@ -104,6 +104,23 @@ function SettingsPage() {
             Se você enviar mensagem pelo WhatsApp e este horário não mudar, a Meta ainda não está chamando a URL correta do webhook.
           </p>
         </Card>
+
+        <Card icon={<Mail className="h-4 w-4" />} title="Domínio de e-mail">
+          <p className="text-sm text-muted-foreground">
+            Configure um domínio próprio para enviar e-mails (ex.: <code>notify.seusite.com</code>). Necessário para
+            e-mails transacionais e para responder tickets por e-mail.
+          </p>
+          <ol className="ml-5 list-decimal text-sm text-muted-foreground space-y-1">
+            <li>Peça ao assistente Lovable: <em>"configurar domínio de e-mail"</em>.</li>
+            <li>No diálogo, informe o subdomínio (ex.: <code>notify.seudominio.com</code>).</li>
+            <li>Adicione os registros NS no seu provedor de DNS.</li>
+            <li>Acompanhe o status em <strong>Cloud → Emails</strong> (até 72h para propagar).</li>
+          </ol>
+        </Card>
+
+
+
+
 
         <div>
           <button onClick={save} className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">Salvar alterações</button>
