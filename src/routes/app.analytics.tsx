@@ -1,7 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
-import { BarChart3, TrendingUp, MessageCircle, Users, GitBranch, Zap } from "lucide-react";
+import { getNPSStats } from "@/lib/nps.functions";
+import { BarChart3, TrendingUp, MessageCircle, Users, GitBranch, Zap, Star } from "lucide-react";
 
 export const Route = createFileRoute("/app/analytics")({ component: AnalyticsPage });
 
