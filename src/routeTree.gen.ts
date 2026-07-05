@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as UnsubscribeRouteImport } from './routes/unsubscribe'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
@@ -36,6 +37,11 @@ import { Route as ApiPublicWhatsappWebhookRouteImport } from './routes/api/publi
 import { Route as ApiPublicCronTickRouteImport } from './routes/api/public/cron.tick'
 import { Route as ApiPublicMetaLeadsWebhookRouteImport } from './routes/api/public/meta/leads/webhook'
 
+const UnsubscribeRoute = UnsubscribeRouteImport.update({
+  id: '/unsubscribe',
+  path: '/unsubscribe',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
@@ -177,6 +183,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
   '/auth': typeof AuthRoute
+  '/unsubscribe': typeof UnsubscribeRoute
   '/app/admin': typeof AppAdminRoute
   '/app/admin-test': typeof AppAdminTestRoute
   '/app/analytics': typeof AppAnalyticsRoute
@@ -205,6 +212,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
   '/auth': typeof AuthRoute
+  '/unsubscribe': typeof UnsubscribeRoute
   '/app/admin': typeof AppAdminRoute
   '/app/admin-test': typeof AppAdminTestRoute
   '/app/analytics': typeof AppAnalyticsRoute
@@ -234,6 +242,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
   '/auth': typeof AuthRoute
+  '/unsubscribe': typeof UnsubscribeRoute
   '/app/admin': typeof AppAdminRoute
   '/app/admin-test': typeof AppAdminTestRoute
   '/app/analytics': typeof AppAnalyticsRoute
@@ -264,6 +273,7 @@ export interface FileRouteTypes {
     | '/'
     | '/app'
     | '/auth'
+    | '/unsubscribe'
     | '/app/admin'
     | '/app/admin-test'
     | '/app/analytics'
@@ -292,6 +302,7 @@ export interface FileRouteTypes {
     | '/'
     | '/app'
     | '/auth'
+    | '/unsubscribe'
     | '/app/admin'
     | '/app/admin-test'
     | '/app/analytics'
@@ -320,6 +331,7 @@ export interface FileRouteTypes {
     | '/'
     | '/app'
     | '/auth'
+    | '/unsubscribe'
     | '/app/admin'
     | '/app/admin-test'
     | '/app/analytics'
@@ -349,6 +361,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
   AuthRoute: typeof AuthRoute
+  UnsubscribeRoute: typeof UnsubscribeRoute
   EmailUnsubscribeRoute: typeof EmailUnsubscribeRoute
   LovableEmailSuppressionRoute: typeof LovableEmailSuppressionRoute
   ApiPublicCronTickRoute: typeof ApiPublicCronTickRoute
@@ -365,6 +378,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/unsubscribe': {
+      id: '/unsubscribe'
+      path: '/unsubscribe'
+      fullPath: '/unsubscribe'
+      preLoaderRoute: typeof UnsubscribeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth': {
       id: '/auth'
       path: '/auth'
@@ -584,6 +604,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
   AuthRoute: AuthRoute,
+  UnsubscribeRoute: UnsubscribeRoute,
   EmailUnsubscribeRoute: EmailUnsubscribeRoute,
   LovableEmailSuppressionRoute: LovableEmailSuppressionRoute,
   ApiPublicCronTickRoute: ApiPublicCronTickRoute,
