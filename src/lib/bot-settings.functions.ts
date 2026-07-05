@@ -6,6 +6,7 @@ const TrainingSchema = z.object({
   businessName: z.string().trim().min(1, "Informe o nome do negócio").max(120),
   welcomeMessage: z.string().trim().max(600).optional().default(""),
   botScript: z.string().trim().min(20, "Informe um roteiro com pelo menos 20 caracteres").max(8000, "O roteiro deve ter até 8.000 caracteres"),
+  replyWithAudio: z.boolean().optional().default(false),
 });
 
 export const getBotTraining = createServerFn({ method: "GET" })
@@ -13,7 +14,7 @@ export const getBotTraining = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { data, error } = await context.supabase
       .from("settings")
-      .select("business_name, welcome_message, ai_system_prompt, updated_at")
+      .select("business_name, welcome_message, ai_system_prompt, reply_with_audio, updated_at")
       .eq("id", 1)
       .single();
 
@@ -22,6 +23,7 @@ export const getBotTraining = createServerFn({ method: "GET" })
       businessName: data.business_name ?? "NexaBot",
       welcomeMessage: data.welcome_message ?? "",
       botScript: data.ai_system_prompt ?? "",
+      replyWithAudio: data.reply_with_audio ?? false,
       updatedAt: data.updated_at ?? null,
     };
   });
@@ -36,6 +38,7 @@ export const saveBotTraining = createServerFn({ method: "POST" })
         business_name: data.businessName,
         welcome_message: data.welcomeMessage,
         ai_system_prompt: data.botScript,
+        reply_with_audio: data.replyWithAudio,
       })
       .eq("id", 1);
 

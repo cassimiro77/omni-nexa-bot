@@ -1,73 +1,66 @@
 
-# NexaBot — MVP
+## Escopo desta rodada
 
-Stack: TanStack Start (já no projeto) + Lovable Cloud (auth/DB) + Lovable AI Gateway (Gemini) + WhatsApp Cloud API + Meta Lead Ads webhook.
+Foco em dois canais: **WhatsApp avançado** e **Áudio (STT/TTS)** dentro do próprio WhatsApp. E-mail/Jira/telefonia ficam para rodadas seguintes.
 
-O escopo original (6 CRMs, 3 ERPs, Zapier/Make/n8n, Kubernetes/Kafka, Instagram, Messenger, gateways de pagamento) fica **fora deste MVP**. Entrego uma base sólida, funcional, com um webhook genérico de saída que você conecta a Zapier/Make/n8n depois.
+---
 
-## O que entrego
+## 1. WhatsApp avançado
 
-### 1. Backend (Lovable Cloud)
-Tabelas com RLS e GRANTs:
-- `profiles` — usuários do painel
-- `user_roles` + `has_role()` — admin/operador (padrão seguro)
-- `contacts` — leads (phone, name, email, origin, tags[], status, created_at)
-- `messages` — histórico (contact_id, channel='whatsapp', direction, content, ai_used, wa_message_id, created_at)
-- `funnels` — nome, steps JSONB, triggers JSONB, active
-- `events` — auditoria (type, payload, created_at)
-- `settings` — 1 linha: business_name, ai_system_prompt, welcome_message, outbound_webhook_url
+Tudo continua chegando no webhook já existente (`/api/public/whatsapp/webhook`). Vou estender o processador:
 
-### 2. Endpoints (server routes TanStack)
-Públicos (assinatura verificada):
-- `GET /api/public/whatsapp/webhook` — verify (hub.challenge)
-- `POST /api/public/whatsapp/webhook` — recebe msgs, salva, roda IA, responde
-- `GET /api/public/meta/leads/webhook` — verify
-- `POST /api/public/meta/leads/webhook` — cria contact, dispara boas-vindas + webhook externo
+- **Menu interativo de boas-vindas** na primeira mensagem do contato:
+  1. Vendas / Planos
+  2. Suporte
+  3. Dúvidas frequentes
+  4. Falar com atendente humano
+- **Roteamento por intenção** usando a IA + regras simples:
+  - Vendas → segue com IA usando o roteiro comercial (já existente em `settings.ai_system_prompt`).
+  - Suporte / Dúvidas → IA com base no mesmo roteiro (base de conhecimento única por enquanto).
+  - "Atendente humano" ou frases equivalentes → **handoff**: marca o contato com `status = 'human_requested'`, silencia o bot e notifica no Inbox.
+- **Handoff humano**: enquanto o contato estiver com `human_requested` ou `human`, o webhook NÃO responde automaticamente. No Inbox, um botão "Devolver ao bot" reativa.
+- **NPS pós-atendimento**: nova tabela `nps_responses`. Um botão no Inbox ("Encerrar e enviar NPS") dispara uma pergunta 0–10 pelo WhatsApp; a próxima resposta numérica do contato é gravada como NPS e o bot agradece.
+- **Consulta de status de pedido / agendamento**: por enquanto ficam como **respostas guiadas pela IA** (ela pede o número do pedido e devolve uma mensagem-padrão). Integrações reais com e-commerce/calendário exigem sistemas que ainda não temos — sinalizo como próxima fase.
+- **Carrinho abandonado proativo**: também próxima fase (depende de integração com plataforma de e-commerce).
 
-Protegidos (`requireSupabaseAuth`):
-- `sendWhatsAppMessage` (server fn) — envio manual do painel
-- `generateAIReply` — chama Gemini via Lovable AI Gateway
-- CRUD de contacts, funnels, settings
-- `triggerOutboundWebhook` — POST genérico p/ Zapier/Make/n8n
+## 2. Áudio (STT/TTS) no WhatsApp
 
-### 3. IA
-Gemini 3 Flash via Lovable AI Gateway. System prompt configurável no painel. Contexto: últimas 20 msgs do contato + dados do lead. Detecta intenção básica (interesse / preço / agendamento / suporte) e pode acionar fluxo.
+- **Recebimento de áudio**: quando o webhook receber uma mensagem do tipo `audio`/`voice`, baixar o binário via `https://graph.facebook.com/v21.0/{media_id}` (usando `META_WA_TOKEN`), enviar para a Lovable AI STT (`openai/gpt-4o-mini-transcribe`) e usar a transcrição como conteúdo da mensagem — a partir daí, mesmo fluxo de texto.
+- A mensagem salva no banco fica com `content = transcrição` e `metadata.audio = { media_id, mime }` para auditoria.
+- **Resposta em áudio (opcional)**: nova flag `settings.reply_with_audio` (default `false`). Quando `true`, além de mandar o texto, o bot gera TTS com `openai/gpt-4o-mini-tts`, faz upload para o Storage do backend e envia como áudio via `messaging_product: whatsapp, type: audio, audio: { link }`.
+- Toggle na página **Treinamento** para ligar/desligar a resposta em áudio.
 
-### 4. Fluxos (motor simples)
-Trigger types: `lead_ad_received`, `keyword`, `first_message`.
-Steps: `send_message`, `add_tag`, `wait`, `call_webhook`.
-Executor roda no webhook de entrada. (Sem agendamento/cron complexo — wait é curto/inline.)
+## 3. Alterações no schema (backend)
 
-### 5. Painel (frontend)
-Rotas:
-- `/auth` — login/signup (email+senha)
-- `/` — dashboard (métricas: leads, mensagens, conversão)
-- `/inbox` — lista de conversas + thread de mensagens + composer
-- `/contacts` — tabela com filtros por tag/origem
-- `/funnels` — CRUD visual simples de fluxos
-- `/settings` — chaves Meta, system prompt IA, webhook externo, mensagem de boas-vindas
+Migração única:
 
-Design escuro moderno, tokens em `src/styles.css`.
+- `contacts.status` — passa a aceitar também `human_requested` e `human` (é `text`, sem enum, então só precisa refletir na UI).
+- Nova tabela `public.nps_responses` (`id`, `contact_id`, `score int`, `comment text`, `created_at`) com RLS + GRANTs (SELECT/INSERT para `authenticated`, ALL para `service_role`).
+- Nova coluna `settings.reply_with_audio boolean default false`.
+- Novo bucket **público** `wa-audio` para hospedar TTS gerado (WhatsApp precisa de URL público).
 
-### 6. Secrets necessários
-Vou pedir via `add_secret`:
-- `META_WA_TOKEN` (token permanente WhatsApp Cloud API)
-- `META_WA_PHONE_NUMBER_ID`
-- `META_WA_VERIFY_TOKEN` (você escolhe — string qualquer que você cola no painel Meta)
-- `META_APP_SECRET` (para verificar assinatura X-Hub-Signature-256)
+## 4. UI
 
-`LOVABLE_API_KEY` é provisionado automaticamente.
+- **Inbox** (`app.inbox.tsx`): botão "Assumir atendimento" (vira `human`), "Devolver ao bot" (volta a `in_conversation`), "Encerrar e enviar NPS".
+- **Treinamento** (`app.training.tsx`): toggle "Responder também em áudio".
+- **Analytics** (`app.analytics.tsx`): card com NPS médio e distribuição de scores.
 
-## Fora do MVP (posso adicionar depois)
-Instagram/Messenger, HubSpot/RD/Pipedrive/Zoho/Salesforce/Agendor, Bling/Omie/Tiny, Zapier/Make/n8n nativos (o webhook genérico cobre por enquanto), gateways de pagamento, TTS, Kubernetes/Kafka/microsserviços. Se quiser algum desses agora, me diga qual e priorizo — cada um é uma feature própria.
+## 5. Arquivos afetados
 
-## Passo a passo de execução
-1. Habilito Lovable Cloud e crio migrations (tabelas + RLS + GRANTs + roles)
-2. Peço os 4 secrets Meta
-3. Crio server routes públicos WhatsApp + Meta Leads (com verificação de assinatura)
-4. Crio server fns protegidos + integração Lovable AI Gateway
-5. Motor de fluxos simples
-6. Painel completo (auth, inbox, contacts, funnels, settings, dashboard)
-7. Documentação em `README.md` (como configurar webhooks na Meta, como criar formulário Lead Ads, exemplos de fluxo)
+- `src/routes/api/public/whatsapp/webhook.ts` — grande refactor: baixa mídia, STT, handoff, menu inicial, NPS listener.
+- `src/lib/whatsapp.server.ts` — novos helpers `downloadWhatsAppMedia`, `sendWhatsAppAudio`.
+- `src/lib/nps.functions.ts` (novo) — enviar convite NPS, listar respostas.
+- `src/lib/handoff.functions.ts` (novo) — assumir/devolver contato.
+- `src/lib/bot-settings.functions.ts` — inclui `reply_with_audio`.
+- `src/routes/app.inbox.tsx`, `app.training.tsx`, `app.analytics.tsx` — UI.
+- Migração SQL.
 
-Confirma para eu executar?
+## Fora do escopo desta rodada (fases seguintes)
+
+- E-mail (IMAP/Gmail) → Jira: aguardando conta Jira ou sistema alternativo.
+- Voz por telefonia (Twilio/PABX).
+- Portal de autoatendimento Jira / sync de tickets.
+- Integração real com e-commerce (carrinho abandonado, status de pedido) e calendário (agendamento).
+- Dashboards avançados de aprendizado contínuo e retreino automático.
+
+Confirma para eu implementar essa rodada?

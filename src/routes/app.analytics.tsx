@@ -1,11 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
-import { BarChart3, TrendingUp, MessageCircle, Users, GitBranch, Zap } from "lucide-react";
+import { getNPSStats } from "@/lib/nps.functions";
+import { BarChart3, TrendingUp, MessageCircle, Users, GitBranch, Zap, Star } from "lucide-react";
 
 export const Route = createFileRoute("/app/analytics")({ component: AnalyticsPage });
 
 function AnalyticsPage() {
+  const npsFn = useServerFn(getNPSStats);
+  const { data: nps } = useQuery({ queryKey: ["nps-stats"], queryFn: () => npsFn() });
   const { data } = useQuery({
     queryKey: ["analytics"],
     queryFn: async () => {
@@ -67,11 +71,12 @@ function AnalyticsPage() {
         <p className="text-sm text-muted-foreground">Métricas dos últimos 30 dias.</p>
       </header>
 
-      <div className="grid gap-4 md:grid-cols-4 mb-6">
+      <div className="grid gap-4 md:grid-cols-5 mb-6">
         <Metric icon={<Users className="h-4 w-4" />} label="Leads" value={contacts.length} accent="text-primary" />
         <Metric icon={<TrendingUp className="h-4 w-4" />} label="Taxa de conversão" value={`${conversionRate}%`} accent="text-success" />
         <Metric icon={<MessageCircle className="h-4 w-4" />} label="Mensagens" value={inbound + outbound} sub={`${inbound} in · ${outbound} out`} />
         <Metric icon={<Zap className="h-4 w-4" />} label="Respostas IA" value={`${aiRate}%`} sub={`${aiMsgs} de ${outbound}`} accent="text-primary" />
+        <Metric icon={<Star className="h-4 w-4" />} label="NPS" value={nps?.total ? nps.nps : "—"} sub={nps?.total ? `${nps.total} resp · média ${nps.avg}` : "sem respostas"} accent="text-success" />
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 mb-6">
