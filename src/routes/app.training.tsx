@@ -124,6 +124,21 @@ function TrainingPage() {
 
         <aside className="space-y-4">
           <div className="rounded-xl border border-border bg-card p-5">
+            <div className="mb-3 flex items-center gap-2 text-sm font-medium"><Sparkles className="h-4 w-4 text-primary" /> Canais</div>
+            <label className="flex items-start gap-3 rounded-md border border-border p-3 cursor-pointer hover:bg-accent/40">
+              <input
+                type="checkbox"
+                checked={form.replyWithAudio}
+                onChange={(e) => setForm({ ...form, replyWithAudio: e.target.checked })}
+                className="mt-1"
+              />
+              <div>
+                <div className="text-sm font-medium">Responder também em áudio</div>
+                <p className="text-xs text-muted-foreground">O bot envia a resposta como mensagem de voz no WhatsApp (TTS), além do texto.</p>
+              </div>
+            </label>
+          </div>
+          <div className="rounded-xl border border-border bg-card p-5">
             <div className="mb-3 flex items-center gap-2 text-sm font-medium"><Sparkles className="h-4 w-4 text-primary" /> Base recomendada</div>
             <button
               onClick={() => setForm((current) => ({ ...current, botScript: starterScript(current.businessName || "NexaBot") }))}
