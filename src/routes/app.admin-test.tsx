@@ -80,6 +80,7 @@ function AdminTestPage() {
           "X-Nexabot-Auth": `Bearer ${accessToken}`,
         },
         body: JSON.stringify({
+          sessionToken: accessToken,
           name: name.trim(),
           phone: phone.trim(),
           mode,

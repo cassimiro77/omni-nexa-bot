@@ -4,6 +4,7 @@ import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
 
 const schema = z.object({
+  sessionToken: z.string().trim().min(20).optional(),
   name: z.string().trim().min(1).max(100),
   phone: z.string().trim().min(8).max(20),
   mode: z.enum(["freeform", "template"]),
@@ -62,22 +63,6 @@ export const Route = createFileRoute("/api/public/admin-test/send")({
           return jsonError("Backend indisponível. Verifique a conexão do projeto.", 500);
         }
 
-        const authHeader = request.headers.get("authorization") ?? request.headers.get("x-nexabot-auth") ?? "";
-        console.info("[admin-test-send] auth headers", {
-          hasAuthorization: Boolean(request.headers.get("authorization")),
-          hasFallbackAuth: Boolean(request.headers.get("x-nexabot-auth")),
-          contentType: request.headers.get("content-type"),
-          origin: request.headers.get("origin"),
-        });
-        if (!authHeader.startsWith("Bearer ")) {
-          return jsonError("Sessão não enviada. Faça login novamente e tente de novo.", 401);
-        }
-
-        const token = authHeader.replace("Bearer ", "").trim();
-        if (!token || token.split(".").length !== 3) {
-          return jsonError("Sessão inválida. Faça login novamente e tente de novo.", 401);
-        }
-
         let body: unknown;
         try {
           body = await request.json();
@@ -91,6 +76,24 @@ export const Route = createFileRoute("/api/public/admin-test/send")({
         }
 
         const data = parsed.data;
+        const authHeader = request.headers.get("authorization") ?? request.headers.get("x-nexabot-auth") ?? "";
+        const bodyToken = data.sessionToken?.trim() ?? "";
+        const token = authHeader.startsWith("Bearer ") ? authHeader.replace("Bearer ", "").trim() : bodyToken;
+        console.info("[admin-test-send] auth debug", {
+          hasAuthorizationHeader: Boolean(request.headers.get("authorization")),
+          hasFallbackHeader: Boolean(request.headers.get("x-nexabot-auth")),
+          hasBodyToken: Boolean(bodyToken),
+          tokenParts: token ? token.split(".").length : 0,
+          contentType: request.headers.get("content-type"),
+          origin: request.headers.get("origin"),
+        });
+        if (!token) {
+          return jsonError("Sessão não enviada. Faça login novamente e tente de novo.", 401);
+        }
+        if (token.split(".").length !== 3) {
+          return jsonError("Sessão inválida. Faça login novamente e tente de novo.", 401);
+        }
+
         const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
           global: {
             fetch: createSupabaseFetch(SUPABASE_PUBLISHABLE_KEY),
