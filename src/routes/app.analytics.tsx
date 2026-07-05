@@ -8,6 +8,8 @@ import { BarChart3, TrendingUp, MessageCircle, Users, GitBranch, Zap, Star } fro
 export const Route = createFileRoute("/app/analytics")({ component: AnalyticsPage });
 
 function AnalyticsPage() {
+  const npsFn = useServerFn(getNPSStats);
+  const { data: nps } = useQuery({ queryKey: ["nps-stats"], queryFn: () => npsFn() });
   const { data } = useQuery({
     queryKey: ["analytics"],
     queryFn: async () => {
