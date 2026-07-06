@@ -1,5 +1,32 @@
 import { createFileRoute } from "@tanstack/react-router";
 
+type WebhookMessage = {
+  from?: string;
+  from_user_id?: string;
+  from_logical_id?: string;
+  id?: string;
+  type?: string;
+  text?: { body?: string };
+  audio?: { id?: string; mime_type?: string; voice?: boolean };
+  voice?: { id?: string; mime_type?: string };
+  interactive?: { button_reply?: { id?: string; title?: string }; list_reply?: { id?: string; title?: string } };
+};
+
+type WebhookContact = { profile?: { name?: string }; wa_id?: string };
+
+function normalizeWhatsAppPhone(value: string | undefined | null) {
+  const digits = (value ?? "").replace(/\D/g, "");
+  return digits.length >= 10 && digits.length <= 15 ? digits : "";
+}
+
+function getInboundPhone(message: WebhookMessage, contact?: WebhookContact) {
+  return normalizeWhatsAppPhone(message.from) || normalizeWhatsAppPhone(contact?.wa_id);
+}
+
+function compactError(error: unknown) {
+  return error instanceof Error ? { message: error.message, name: error.name } : { message: String(error) };
+}
+
 // WhatsApp Cloud API webhook.
 // GET  -> verify challenge
 // POST -> receive messages: transcribe audio, handle handoff/NPS, otherwise reply via AI.
@@ -56,6 +83,10 @@ export const Route = createFileRoute("/api/public/whatsapp/webhook")({
 
         if (!canProcess) return Response.json({ ok: true, ignored: "invalid_signature" });
 
+        let processedMessages = 0;
+        let repliedMessages = 0;
+        let skippedMessages = 0;
+
         try {
           const entries = (payload as { entry?: unknown[] }).entry ?? [];
           for (const entry of entries) {
@@ -65,24 +96,37 @@ export const Route = createFileRoute("/api/public/whatsapp/webhook")({
                 value?: {
                   messages?: unknown[];
                   contacts?: { profile?: { name?: string }; wa_id?: string }[];
+                  statuses?: unknown[];
                 };
               }).value;
               const messages = value?.messages ?? [];
               const waContact = value?.contacts?.[0];
 
+              if (!messages.length && (value?.statuses?.length ?? 0) > 0) {
+                await supabaseAdmin.from("events").insert({
+                  type: "whatsapp.webhook.status_only",
+                  payload: { statuses: value?.statuses, metadata: (value as { metadata?: unknown })?.metadata } as never,
+                });
+              }
+
               for (const msg of messages) {
-                const m = msg as {
-                  from?: string;
-                  from_logical_id?: string;
-                  id?: string;
-                  type?: string;
-                  text?: { body?: string };
-                  audio?: { id?: string; mime_type?: string; voice?: boolean };
-                  voice?: { id?: string; mime_type?: string };
-                  interactive?: { button_reply?: { id?: string; title?: string }; list_reply?: { id?: string; title?: string } };
-                };
-                const from = m.from ?? waContact?.wa_id ?? m.from_logical_id;
-                if (!from) continue;
+                const m = msg as WebhookMessage;
+                const from = getInboundPhone(m, waContact);
+                if (!from) {
+                  skippedMessages += 1;
+                  await supabaseAdmin.from("events").insert({
+                    type: "whatsapp.webhook.message_missing_phone",
+                    payload: {
+                      message_id: m.id,
+                      message_type: m.type,
+                      from: m.from ?? null,
+                      wa_id: waContact?.wa_id ?? null,
+                      from_user_id: m.from_user_id ?? null,
+                      from_logical_id: m.from_logical_id ?? null,
+                    } as never,
+                  });
+                  continue;
+                }
 
                 // === Extract content: text, audio (STT), or interactive ===
                 let content = "";
@@ -118,6 +162,14 @@ export const Route = createFileRoute("/api/public/whatsapp/webhook")({
                     phone: from, name: waContact?.profile?.name ?? from, origin: "whatsapp", status: "new",
                     last_message_at: new Date().toISOString(),
                   }).select("id, status, awaiting_nps").single();
+                  if (ins.error) {
+                    skippedMessages += 1;
+                    await supabaseAdmin.from("events").insert({
+                      type: "whatsapp.webhook.contact_insert_error",
+                      payload: { message_id: m.id, phone: from, error: ins.error.message } as never,
+                    });
+                    continue;
+                  }
                   existing = ins.data;
                 } else if (waContact?.profile?.name) {
                   await supabaseAdmin.from("contacts")
@@ -129,14 +181,34 @@ export const Route = createFileRoute("/api/public/whatsapp/webhook")({
                 // De-dupe by WA message id
                 if (m.id) {
                   const { data: duplicate } = await supabaseAdmin.from("messages").select("id").eq("wa_message_id", m.id).maybeSingle();
-                  if (duplicate) continue;
+                  if (duplicate) {
+                    skippedMessages += 1;
+                    await supabaseAdmin.from("events").insert({
+                      type: "whatsapp.webhook.duplicate_message",
+                      payload: { message_id: m.id, phone: from, saved_message_id: duplicate.id } as never,
+                    });
+                    continue;
+                  }
                 }
 
-                await supabaseAdmin.from("messages").insert({
+                const inboundInsert = await supabaseAdmin.from("messages").insert({
                   contact_id: existing.id, direction: "inbound", channel: "whatsapp",
                   content, wa_message_id: m.id,
-                  metadata: audioMeta ? { audio: audioMeta } : null,
+                  metadata: {
+                    ...(audioMeta ? { audio: audioMeta } : {}),
+                    meta_from_user_id: m.from_user_id ?? null,
+                    meta_from_logical_id: m.from_logical_id ?? null,
+                  },
                 });
+                if (inboundInsert.error) {
+                  skippedMessages += 1;
+                  await supabaseAdmin.from("events").insert({
+                    type: "whatsapp.webhook.message_insert_error",
+                    payload: { message_id: m.id, phone: from, contact_id: existing.id, error: inboundInsert.error.message } as never,
+                  });
+                  continue;
+                }
+                processedMessages += 1;
                 await supabaseAdmin.from("contacts").update({ last_message_at: new Date().toISOString() }).eq("id", existing.id);
 
                 // === NPS capture ===
@@ -158,6 +230,7 @@ export const Route = createFileRoute("/api/public/whatsapp/webhook")({
                       content: thanks, ai_used: false, wa_message_id: s.wa_message_id ?? null,
                       metadata: { nps_thanks: true, score },
                     });
+                    repliedMessages += s.ok ? 1 : 0;
                     continue;
                   }
                   // If not a number, fall through to normal flow
@@ -178,6 +251,7 @@ export const Route = createFileRoute("/api/public/whatsapp/webhook")({
                     content: notice, ai_used: false, wa_message_id: s.wa_message_id ?? null,
                     metadata: { handoff: true },
                   });
+                  repliedMessages += s.ok ? 1 : 0;
                   continue;
                 }
 
@@ -195,6 +269,7 @@ export const Route = createFileRoute("/api/public/whatsapp/webhook")({
                     content: welcome, ai_used: false, wa_message_id: s.wa_message_id ?? null,
                     metadata: { welcome: true },
                   });
+                  repliedMessages += s.ok ? 1 : 0;
                   await supabaseAdmin.from("contacts").update({ status: "in_conversation" }).eq("id", existing.id);
                   continue;
                 }
@@ -232,6 +307,7 @@ export const Route = createFileRoute("/api/public/whatsapp/webhook")({
                     content: reply, ai_used: true, wa_message_id: sendText.wa_message_id ?? null,
                     metadata: { auto_reply: true, delivered: sendText.ok, error: sendText.error },
                   });
+                  repliedMessages += sendText.ok ? 1 : 0;
 
                   if (settings?.reply_with_audio) {
                     try {
@@ -248,11 +324,28 @@ export const Route = createFileRoute("/api/public/whatsapp/webhook")({
                   }
 
                   await supabaseAdmin.from("contacts").update({ last_message_at: new Date().toISOString(), status: "in_conversation" }).eq("id", existing.id);
-                } catch (autoErr) { console.error("auto-reply", autoErr); }
+                } catch (autoErr) {
+                  console.error("auto-reply", autoErr);
+                  await supabaseAdmin.from("events").insert({
+                    type: "whatsapp.webhook.auto_reply_error",
+                    payload: { message_id: m.id, phone: from, error: compactError(autoErr) } as never,
+                  });
+                }
               }
             }
           }
-        } catch (e) { console.error("whatsapp parse", e); }
+        } catch (e) {
+          console.error("whatsapp parse", e);
+          await supabaseAdmin.from("events").insert({
+            type: "whatsapp.webhook.processing_error",
+            payload: { error: compactError(e) } as never,
+          });
+        }
+
+        await supabaseAdmin.from("events").insert({
+          type: "whatsapp.webhook.processed",
+          payload: { processed_messages: processedMessages, replied_messages: repliedMessages, skipped_messages: skippedMessages } as never,
+        });
 
         return Response.json({ ok: true });
       },
