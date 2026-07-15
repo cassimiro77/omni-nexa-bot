@@ -19,6 +19,7 @@ import { Route as EmailUnsubscribeRouteImport } from './routes/email/unsubscribe
 import { Route as AppTrainingRouteImport } from './routes/app.training'
 import { Route as AppTemplatesRouteImport } from './routes/app.templates'
 import { Route as AppSettingsRouteImport } from './routes/app.settings'
+import { Route as AppQueueRouteImport } from './routes/app.queue'
 import { Route as AppIntegrationsRouteImport } from './routes/app.integrations'
 import { Route as AppInboxRouteImport } from './routes/app.inbox'
 import { Route as AppFunnelsRouteImport } from './routes/app.funnels'
@@ -89,6 +90,11 @@ const AppTemplatesRoute = AppTemplatesRouteImport.update({
 const AppSettingsRoute = AppSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppQueueRoute = AppQueueRouteImport.update({
+  id: '/queue',
+  path: '/queue',
   getParentRoute: () => AppRoute,
 } as any)
 const AppIntegrationsRoute = AppIntegrationsRouteImport.update({
@@ -218,6 +224,7 @@ export interface FileRoutesByFullPath {
   '/app/funnels': typeof AppFunnelsRoute
   '/app/inbox': typeof AppInboxRoute
   '/app/integrations': typeof AppIntegrationsRoute
+  '/app/queue': typeof AppQueueRoute
   '/app/settings': typeof AppSettingsRoute
   '/app/templates': typeof AppTemplatesRoute
   '/app/training': typeof AppTrainingRoute
@@ -251,6 +258,7 @@ export interface FileRoutesByTo {
   '/app/funnels': typeof AppFunnelsRoute
   '/app/inbox': typeof AppInboxRoute
   '/app/integrations': typeof AppIntegrationsRoute
+  '/app/queue': typeof AppQueueRoute
   '/app/settings': typeof AppSettingsRoute
   '/app/templates': typeof AppTemplatesRoute
   '/app/training': typeof AppTrainingRoute
@@ -285,6 +293,7 @@ export interface FileRoutesById {
   '/app/funnels': typeof AppFunnelsRoute
   '/app/inbox': typeof AppInboxRoute
   '/app/integrations': typeof AppIntegrationsRoute
+  '/app/queue': typeof AppQueueRoute
   '/app/settings': typeof AppSettingsRoute
   '/app/templates': typeof AppTemplatesRoute
   '/app/training': typeof AppTrainingRoute
@@ -320,6 +329,7 @@ export interface FileRouteTypes {
     | '/app/funnels'
     | '/app/inbox'
     | '/app/integrations'
+    | '/app/queue'
     | '/app/settings'
     | '/app/templates'
     | '/app/training'
@@ -353,6 +363,7 @@ export interface FileRouteTypes {
     | '/app/funnels'
     | '/app/inbox'
     | '/app/integrations'
+    | '/app/queue'
     | '/app/settings'
     | '/app/templates'
     | '/app/training'
@@ -386,6 +397,7 @@ export interface FileRouteTypes {
     | '/app/funnels'
     | '/app/inbox'
     | '/app/integrations'
+    | '/app/queue'
     | '/app/settings'
     | '/app/templates'
     | '/app/training'
@@ -498,6 +510,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/app/settings'
       preLoaderRoute: typeof AppSettingsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/queue': {
+      id: '/app/queue'
+      path: '/queue'
+      fullPath: '/app/queue'
+      preLoaderRoute: typeof AppQueueRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/integrations': {
@@ -659,6 +678,7 @@ interface AppRouteChildren {
   AppFunnelsRoute: typeof AppFunnelsRoute
   AppInboxRoute: typeof AppInboxRoute
   AppIntegrationsRoute: typeof AppIntegrationsRoute
+  AppQueueRoute: typeof AppQueueRoute
   AppSettingsRoute: typeof AppSettingsRoute
   AppTemplatesRoute: typeof AppTemplatesRoute
   AppTrainingRoute: typeof AppTrainingRoute
@@ -673,6 +693,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppFunnelsRoute: AppFunnelsRoute,
   AppInboxRoute: AppInboxRoute,
   AppIntegrationsRoute: AppIntegrationsRoute,
+  AppQueueRoute: AppQueueRoute,
   AppSettingsRoute: AppSettingsRoute,
   AppTemplatesRoute: AppTemplatesRoute,
   AppTrainingRoute: AppTrainingRoute,
