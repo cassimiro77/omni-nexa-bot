@@ -1,66 +1,114 @@
+# Plano de Testes: Manual + Integração com Campanhas Meta
 
-## Escopo desta rodada
+Validação completa do NexaBot em duas fases: primeiro exercitar todos os fluxos manualmente com um número de teste, depois plugar em uma campanha real de Lead Ads do Meta e observar o funil ponta a ponta.
 
-Foco em dois canais: **WhatsApp avançado** e **Áudio (STT/TTS)** dentro do próprio WhatsApp. E-mail/Jira/telefonia ficam para rodadas seguintes.
+## Fase 1 — Testes manuais no WhatsApp
+
+Objetivo: garantir que cada capacidade do bot responde corretamente antes de expor a leads reais.
+
+### 1.1 Recepção e resposta básica
+- Enviar "oi" do celular pessoal → confirmar que:
+  - Aparece contato novo em `Contatos`
+  - Aparece conversa no `Inbox`
+  - Bot responde automaticamente com saudação da IA
+- Enviar 3-4 mensagens em sequência → confirmar que a IA mantém contexto (usa histórico)
+
+### 1.2 Áudio (voz → texto → voz)
+- Gravar áudio no WhatsApp e enviar
+- Confirmar: transcrição aparece na mensagem, IA responde (texto ou áudio conforme configurado), áudio de resposta reproduz no celular
+
+### 1.3 Prompt do sistema
+- Em `Configurações`, ajustar prompt para o negócio real (ex.: "Você é a Ana, atendente da Prime Digital...")
+- Enviar nova mensagem → confirmar tom/persona aplicados
+
+### 1.4 Templates de mensagem
+- Em `Templates`, criar/verificar template aprovado na Meta
+- Disparar template para o número de teste
+- Confirmar entrega e log da mensagem
+
+### 1.5 Funil automatizado
+- Em `Funis`, criar funil simples:
+  - Gatilho: `first_message`
+  - Passos: 1) mensagem de boas-vindas; 2) aguardar 1 min; 3) pergunta de qualificação
+- Enviar "oi" de outro número → confirmar sequência disparada nos tempos corretos
+
+### 1.6 Handoff humano
+- Em uma conversa ativa, marcar como `handoff` no Inbox
+- Enviar nova mensagem → confirmar que IA **não** responde e operador pode responder manualmente
+
+### 1.7 Analytics
+- Em `Analytics`, verificar contadores atualizados: leads, mensagens, tempo médio de resposta
+
+### 1.8 Widget de chat no site (opcional)
+- Se for usar embed, testar `/widget` em página HTML de teste, enviar mensagem, confirmar chegada no Inbox
 
 ---
 
-## 1. WhatsApp avançado
+## Fase 2 — Integração com campanha Meta Lead Ads
 
-Tudo continua chegando no webhook já existente (`/api/public/whatsapp/webhook`). Vou estender o processador:
+Objetivo: leads que preencherem o formulário do anúncio chegam automaticamente no NexaBot e recebem contato via WhatsApp.
 
-- **Menu interativo de boas-vindas** na primeira mensagem do contato:
-  1. Vendas / Planos
-  2. Suporte
-  3. Dúvidas frequentes
-  4. Falar com atendente humano
-- **Roteamento por intenção** usando a IA + regras simples:
-  - Vendas → segue com IA usando o roteiro comercial (já existente em `settings.ai_system_prompt`).
-  - Suporte / Dúvidas → IA com base no mesmo roteiro (base de conhecimento única por enquanto).
-  - "Atendente humano" ou frases equivalentes → **handoff**: marca o contato com `status = 'human_requested'`, silencia o bot e notifica no Inbox.
-- **Handoff humano**: enquanto o contato estiver com `human_requested` ou `human`, o webhook NÃO responde automaticamente. No Inbox, um botão "Devolver ao bot" reativa.
-- **NPS pós-atendimento**: nova tabela `nps_responses`. Um botão no Inbox ("Encerrar e enviar NPS") dispara uma pergunta 0–10 pelo WhatsApp; a próxima resposta numérica do contato é gravada como NPS e o bot agradece.
-- **Consulta de status de pedido / agendamento**: por enquanto ficam como **respostas guiadas pela IA** (ela pede o número do pedido e devolve uma mensagem-padrão). Integrações reais com e-commerce/calendário exigem sistemas que ainda não temos — sinalizo como próxima fase.
-- **Carrinho abandonado proativo**: também próxima fase (depende de integração com plataforma de e-commerce).
+### 2.1 Assinar webhook de Leadgen na Meta
+No app Meta → Webhooks → objeto **Page** (ou Leadgen), adicionar a mesma URL do webhook do WhatsApp mas com o path de leads:
 
-## 2. Áudio (STT/TTS) no WhatsApp
+```
+https://omni-nexa-bot.lovable.app/api/public/meta/leads/webhook
+```
 
-- **Recebimento de áudio**: quando o webhook receber uma mensagem do tipo `audio`/`voice`, baixar o binário via `https://graph.facebook.com/v21.0/{media_id}` (usando `META_WA_TOKEN`), enviar para a Lovable AI STT (`openai/gpt-4o-mini-transcribe`) e usar a transcrição como conteúdo da mensagem — a partir daí, mesmo fluxo de texto.
-- A mensagem salva no banco fica com `content = transcrição` e `metadata.audio = { media_id, mime }` para auditoria.
-- **Resposta em áudio (opcional)**: nova flag `settings.reply_with_audio` (default `false`). Quando `true`, além de mandar o texto, o bot gera TTS com `openai/gpt-4o-mini-tts`, faz upload para o Storage do backend e envia como áudio via `messaging_product: whatsapp, type: audio, audio: { link }`.
-- Toggle na página **Treinamento** para ligar/desligar a resposta em áudio.
+Campos a marcar: `leadgen`
 
-## 3. Alterações no schema (backend)
+### 2.2 Conectar a página do Facebook ao app
+- Em `Integrações` no NexaBot, autenticar/vincular a Page do Facebook que roda os anúncios
+- Confirmar que o app tem permissão `leads_retrieval` e `pages_manage_metadata`
 
-Migração única:
+### 2.3 Criar formulário e anúncio de teste
+- No Gerenciador de Anúncios da Meta, criar campanha objetivo **Cadastros (Leads)**
+- Criar formulário instantâneo com campos: nome, telefone (obrigatório), e-mail
+- Publicar com orçamento mínimo (ex.: R$ 20/dia) e público bem restrito (você mesmo, cidade específica)
 
-- `contacts.status` — passa a aceitar também `human_requested` e `human` (é `text`, sem enum, então só precisa refletir na UI).
-- Nova tabela `public.nps_responses` (`id`, `contact_id`, `score int`, `comment text`, `created_at`) com RLS + GRANTs (SELECT/INSERT para `authenticated`, ALL para `service_role`).
-- Nova coluna `settings.reply_with_audio boolean default false`.
-- Novo bucket **público** `wa-audio` para hospedar TTS gerado (WhatsApp precisa de URL público).
+### 2.4 Teste com Lead Ads Testing Tool
+Antes de gastar em anúncio real, use a ferramenta oficial:
+```
+https://developers.facebook.com/tools/lead-ads-testing
+```
+- Selecionar Page + Formulário
+- Preencher com seus dados (nome + seu telefone WhatsApp)
+- Enviar teste
+- Verificar em `Contatos` no NexaBot: lead novo apareceu com origem `meta_ads`
+- Verificar em `Inbox`: primeira mensagem automática disparada ao seu WhatsApp
+- Verificar no celular: mensagem chegou
 
-## 4. UI
+### 2.5 Funil específico para Lead Ads
+Criar funil dedicado:
+- Gatilho: `lead_ad_received`
+- Passo 1: mensagem de agradecimento + apresentação
+- Passo 2: aguardar 5 min sem resposta → mensagem de reforço
+- Passo 3: aguardar 1h sem resposta → oferta/CTA final
 
-- **Inbox** (`app.inbox.tsx`): botão "Assumir atendimento" (vira `human`), "Devolver ao bot" (volta a `in_conversation`), "Encerrar e enviar NPS".
-- **Treinamento** (`app.training.tsx`): toggle "Responder também em áudio".
-- **Analytics** (`app.analytics.tsx`): card com NPS médio e distribuição de scores.
+Testar rodando o Testing Tool novamente e observando tempos.
 
-## 5. Arquivos afetados
+### 2.6 Teste com anúncio real (pequena verba)
+- Ativar campanha por 24-48h
+- Monitorar: leads chegando, taxa de resposta ao primeiro contato, conversas ativas
+- Ajustar prompt/funil conforme comportamento real
 
-- `src/routes/api/public/whatsapp/webhook.ts` — grande refactor: baixa mídia, STT, handoff, menu inicial, NPS listener.
-- `src/lib/whatsapp.server.ts` — novos helpers `downloadWhatsAppMedia`, `sendWhatsAppAudio`.
-- `src/lib/nps.functions.ts` (novo) — enviar convite NPS, listar respostas.
-- `src/lib/handoff.functions.ts` (novo) — assumir/devolver contato.
-- `src/lib/bot-settings.functions.ts` — inclui `reply_with_audio`.
-- `src/routes/app.inbox.tsx`, `app.training.tsx`, `app.analytics.tsx` — UI.
-- Migração SQL.
+---
 
-## Fora do escopo desta rodada (fases seguintes)
+## Detalhes técnicos
 
-- E-mail (IMAP/Gmail) → Jira: aguardando conta Jira ou sistema alternativo.
-- Voz por telefonia (Twilio/PABX).
-- Portal de autoatendimento Jira / sync de tickets.
-- Integração real com e-commerce (carrinho abandonado, status de pedido) e calendário (agendamento).
-- Dashboards avançados de aprendizado contínuo e retreino automático.
+- **Rate limit Meta**: primeiras horas do dia podem ter latência; janela de 24h para conversas de serviço, fora disso exige template
+- **Duplicatas**: NexaBot dedupa lead pelo telefone; testes múltiplos com mesmo número atualizam o mesmo contato
+- **Logs**: eventos ficam em `events` (tabela) e podem ser consultados; falhas de envio ficam com `metadata.delivered: false`
+- **Custo IA**: cada resposta consome créditos Lovable AI Gateway; monitorar em Settings → Plans & credits
+- **Numero de teste Meta (`+1 555 640-8219`)**: só entrega para números na allowlist; produção usa o `+55 11 91796-2877`
 
-Confirma para eu implementar essa rodada?
+## Checklist final antes de escalar
+
+- [ ] Bot responde em < 5s em condições normais
+- [ ] Áudio funciona nos dois sentidos
+- [ ] Prompt reflete a marca/tom desejado
+- [ ] Ao menos 1 funil ativo e testado
+- [ ] Handoff manual funciona
+- [ ] Lead Ads Testing Tool → mensagem chega no WhatsApp em < 30s
+- [ ] Analytics mostra dados coerentes
+- [ ] Publicado em URL final (`omni-nexa-bot.lovable.app` ou domínio custom)
