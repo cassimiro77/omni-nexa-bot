@@ -178,19 +178,9 @@ export const Route = createFileRoute("/api/public/whatsapp/webhook")({
                 }
                 if (!existing) continue;
 
-                // De-dupe by WA message id
-                if (m.id) {
-                  const { data: duplicate } = await supabaseAdmin.from("messages").select("id").eq("wa_message_id", m.id).maybeSingle();
-                  if (duplicate) {
-                    skippedMessages += 1;
-                    await supabaseAdmin.from("events").insert({
-                      type: "whatsapp.webhook.duplicate_message",
-                      payload: { message_id: m.id, phone: from, saved_message_id: duplicate.id } as never,
-                    });
-                    continue;
-                  }
-                }
-
+                // Atomic dedupe: try to insert first. If the wa_message_id
+                // already exists (unique index), Meta is retrying the same
+                // webhook — skip the whole pipeline so we don't reply twice.
                 const inboundInsert = await supabaseAdmin.from("messages").insert({
                   contact_id: existing.id, direction: "inbound", channel: "whatsapp",
                   content, wa_message_id: m.id,
@@ -199,8 +189,18 @@ export const Route = createFileRoute("/api/public/whatsapp/webhook")({
                     meta_from_user_id: m.from_user_id ?? null,
                     meta_from_logical_id: m.from_logical_id ?? null,
                   },
-                });
+                }).select("id").maybeSingle();
                 if (inboundInsert.error) {
+                  // 23505 = unique_violation → duplicate webhook, silently skip.
+                  const code = (inboundInsert.error as { code?: string }).code;
+                  if (code === "23505") {
+                    skippedMessages += 1;
+                    await supabaseAdmin.from("events").insert({
+                      type: "whatsapp.webhook.duplicate_message",
+                      payload: { message_id: m.id, phone: from, contact_id: existing.id } as never,
+                    });
+                    continue;
+                  }
                   skippedMessages += 1;
                   await supabaseAdmin.from("events").insert({
                     type: "whatsapp.webhook.message_insert_error",

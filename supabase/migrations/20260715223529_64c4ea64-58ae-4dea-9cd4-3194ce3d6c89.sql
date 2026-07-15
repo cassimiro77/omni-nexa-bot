@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX IF NOT EXISTS messages_wa_message_id_unique ON public.messages (wa_message_id) WHERE wa_message_id IS NOT NULL;
