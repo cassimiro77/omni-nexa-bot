@@ -32,9 +32,18 @@ export const sendWhatsAppReply = createServerFn({ method: "POST" })
     });
     if (mErr) throw new Error(mErr.message);
 
-    await supabase.from("contacts")
-      .update({ last_message_at: nowIso, status: "in_conversation" })
-      .eq("id", data.contactId);
+    // Preserve human/human_requested state (operator sending manually); only reset when bot-owned.
+    const { data: current } = await supabase.from("contacts").select("status").eq("id", data.contactId).single();
+    const patch: { last_message_at: string; status?: string } = { last_message_at: nowIso };
+    if (current?.status !== "human" && current?.status !== "human_requested") patch.status = "in_conversation";
+    await supabase.from("contacts").update(patch).eq("id", data.contactId);
+
+    // Track operator activity for auto-return timeout
+    await supabase
+      .from("handoff_queue")
+      .update({ last_operator_message_at: nowIso })
+      .eq("contact_id", data.contactId)
+      .eq("status", "in_service");
 
     if (!result.ok) throw new Error(result.error ?? "Falha ao enviar via WhatsApp");
     return { ok: true, wa_message_id: result.wa_message_id };

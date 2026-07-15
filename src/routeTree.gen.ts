@@ -19,6 +19,7 @@ import { Route as EmailUnsubscribeRouteImport } from './routes/email/unsubscribe
 import { Route as AppTrainingRouteImport } from './routes/app.training'
 import { Route as AppTemplatesRouteImport } from './routes/app.templates'
 import { Route as AppSettingsRouteImport } from './routes/app.settings'
+import { Route as AppQueueRouteImport } from './routes/app.queue'
 import { Route as AppIntegrationsRouteImport } from './routes/app.integrations'
 import { Route as AppInboxRouteImport } from './routes/app.inbox'
 import { Route as AppFunnelsRouteImport } from './routes/app.funnels'
@@ -36,6 +37,7 @@ import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/em
 import { Route as ApiPublicWidgetEmbedDotjsRouteImport } from './routes/api/public/widget/embed[.]js'
 import { Route as ApiPublicWidgetChatRouteImport } from './routes/api/public/widget/chat'
 import { Route as ApiPublicWhatsappWebhookRouteImport } from './routes/api/public/whatsapp/webhook'
+import { Route as ApiPublicHandoffTickRouteImport } from './routes/api/public/handoff/tick'
 import { Route as ApiPublicCronTickRouteImport } from './routes/api/public/cron.tick'
 import { Route as ApiPublicAdminTestSendRouteImport } from './routes/api/public/admin-test/send'
 import { Route as ApiPublicMetaLeadsWebhookRouteImport } from './routes/api/public/meta/leads/webhook'
@@ -88,6 +90,11 @@ const AppTemplatesRoute = AppTemplatesRouteImport.update({
 const AppSettingsRoute = AppSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppQueueRoute = AppQueueRouteImport.update({
+  id: '/queue',
+  path: '/queue',
   getParentRoute: () => AppRoute,
 } as any)
 const AppIntegrationsRoute = AppIntegrationsRouteImport.update({
@@ -180,6 +187,11 @@ const ApiPublicWhatsappWebhookRoute =
     path: '/api/public/whatsapp/webhook',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHandoffTickRoute = ApiPublicHandoffTickRouteImport.update({
+  id: '/api/public/handoff/tick',
+  path: '/api/public/handoff/tick',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicCronTickRoute = ApiPublicCronTickRouteImport.update({
   id: '/api/public/cron/tick',
   path: '/api/public/cron/tick',
@@ -212,6 +224,7 @@ export interface FileRoutesByFullPath {
   '/app/funnels': typeof AppFunnelsRoute
   '/app/inbox': typeof AppInboxRoute
   '/app/integrations': typeof AppIntegrationsRoute
+  '/app/queue': typeof AppQueueRoute
   '/app/settings': typeof AppSettingsRoute
   '/app/templates': typeof AppTemplatesRoute
   '/app/training': typeof AppTrainingRoute
@@ -219,6 +232,7 @@ export interface FileRoutesByFullPath {
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/api/public/admin-test/send': typeof ApiPublicAdminTestSendRoute
   '/api/public/cron/tick': typeof ApiPublicCronTickRoute
+  '/api/public/handoff/tick': typeof ApiPublicHandoffTickRoute
   '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
   '/api/public/widget/chat': typeof ApiPublicWidgetChatRoute
   '/api/public/widget/embed.js': typeof ApiPublicWidgetEmbedDotjsRoute
@@ -244,6 +258,7 @@ export interface FileRoutesByTo {
   '/app/funnels': typeof AppFunnelsRoute
   '/app/inbox': typeof AppInboxRoute
   '/app/integrations': typeof AppIntegrationsRoute
+  '/app/queue': typeof AppQueueRoute
   '/app/settings': typeof AppSettingsRoute
   '/app/templates': typeof AppTemplatesRoute
   '/app/training': typeof AppTrainingRoute
@@ -251,6 +266,7 @@ export interface FileRoutesByTo {
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/api/public/admin-test/send': typeof ApiPublicAdminTestSendRoute
   '/api/public/cron/tick': typeof ApiPublicCronTickRoute
+  '/api/public/handoff/tick': typeof ApiPublicHandoffTickRoute
   '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
   '/api/public/widget/chat': typeof ApiPublicWidgetChatRoute
   '/api/public/widget/embed.js': typeof ApiPublicWidgetEmbedDotjsRoute
@@ -277,6 +293,7 @@ export interface FileRoutesById {
   '/app/funnels': typeof AppFunnelsRoute
   '/app/inbox': typeof AppInboxRoute
   '/app/integrations': typeof AppIntegrationsRoute
+  '/app/queue': typeof AppQueueRoute
   '/app/settings': typeof AppSettingsRoute
   '/app/templates': typeof AppTemplatesRoute
   '/app/training': typeof AppTrainingRoute
@@ -284,6 +301,7 @@ export interface FileRoutesById {
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/api/public/admin-test/send': typeof ApiPublicAdminTestSendRoute
   '/api/public/cron/tick': typeof ApiPublicCronTickRoute
+  '/api/public/handoff/tick': typeof ApiPublicHandoffTickRoute
   '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
   '/api/public/widget/chat': typeof ApiPublicWidgetChatRoute
   '/api/public/widget/embed.js': typeof ApiPublicWidgetEmbedDotjsRoute
@@ -311,6 +329,7 @@ export interface FileRouteTypes {
     | '/app/funnels'
     | '/app/inbox'
     | '/app/integrations'
+    | '/app/queue'
     | '/app/settings'
     | '/app/templates'
     | '/app/training'
@@ -318,6 +337,7 @@ export interface FileRouteTypes {
     | '/lovable/email/suppression'
     | '/api/public/admin-test/send'
     | '/api/public/cron/tick'
+    | '/api/public/handoff/tick'
     | '/api/public/whatsapp/webhook'
     | '/api/public/widget/chat'
     | '/api/public/widget/embed.js'
@@ -343,6 +363,7 @@ export interface FileRouteTypes {
     | '/app/funnels'
     | '/app/inbox'
     | '/app/integrations'
+    | '/app/queue'
     | '/app/settings'
     | '/app/templates'
     | '/app/training'
@@ -350,6 +371,7 @@ export interface FileRouteTypes {
     | '/lovable/email/suppression'
     | '/api/public/admin-test/send'
     | '/api/public/cron/tick'
+    | '/api/public/handoff/tick'
     | '/api/public/whatsapp/webhook'
     | '/api/public/widget/chat'
     | '/api/public/widget/embed.js'
@@ -375,6 +397,7 @@ export interface FileRouteTypes {
     | '/app/funnels'
     | '/app/inbox'
     | '/app/integrations'
+    | '/app/queue'
     | '/app/settings'
     | '/app/templates'
     | '/app/training'
@@ -382,6 +405,7 @@ export interface FileRouteTypes {
     | '/lovable/email/suppression'
     | '/api/public/admin-test/send'
     | '/api/public/cron/tick'
+    | '/api/public/handoff/tick'
     | '/api/public/whatsapp/webhook'
     | '/api/public/widget/chat'
     | '/api/public/widget/embed.js'
@@ -404,6 +428,7 @@ export interface RootRouteChildren {
   LovableEmailSuppressionRoute: typeof LovableEmailSuppressionRoute
   ApiPublicAdminTestSendRoute: typeof ApiPublicAdminTestSendRoute
   ApiPublicCronTickRoute: typeof ApiPublicCronTickRoute
+  ApiPublicHandoffTickRoute: typeof ApiPublicHandoffTickRoute
   ApiPublicWhatsappWebhookRoute: typeof ApiPublicWhatsappWebhookRoute
   ApiPublicWidgetChatRoute: typeof ApiPublicWidgetChatRoute
   ApiPublicWidgetEmbedDotjsRoute: typeof ApiPublicWidgetEmbedDotjsRoute
@@ -485,6 +510,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/app/settings'
       preLoaderRoute: typeof AppSettingsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/queue': {
+      id: '/app/queue'
+      path: '/queue'
+      fullPath: '/app/queue'
+      preLoaderRoute: typeof AppQueueRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/integrations': {
@@ -606,6 +638,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicWhatsappWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/handoff/tick': {
+      id: '/api/public/handoff/tick'
+      path: '/api/public/handoff/tick'
+      fullPath: '/api/public/handoff/tick'
+      preLoaderRoute: typeof ApiPublicHandoffTickRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/cron/tick': {
       id: '/api/public/cron/tick'
       path: '/api/public/cron/tick'
@@ -639,6 +678,7 @@ interface AppRouteChildren {
   AppFunnelsRoute: typeof AppFunnelsRoute
   AppInboxRoute: typeof AppInboxRoute
   AppIntegrationsRoute: typeof AppIntegrationsRoute
+  AppQueueRoute: typeof AppQueueRoute
   AppSettingsRoute: typeof AppSettingsRoute
   AppTemplatesRoute: typeof AppTemplatesRoute
   AppTrainingRoute: typeof AppTrainingRoute
@@ -653,6 +693,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppFunnelsRoute: AppFunnelsRoute,
   AppInboxRoute: AppInboxRoute,
   AppIntegrationsRoute: AppIntegrationsRoute,
+  AppQueueRoute: AppQueueRoute,
   AppSettingsRoute: AppSettingsRoute,
   AppTemplatesRoute: AppTemplatesRoute,
   AppTrainingRoute: AppTrainingRoute,
@@ -671,6 +712,7 @@ const rootRouteChildren: RootRouteChildren = {
   LovableEmailSuppressionRoute: LovableEmailSuppressionRoute,
   ApiPublicAdminTestSendRoute: ApiPublicAdminTestSendRoute,
   ApiPublicCronTickRoute: ApiPublicCronTickRoute,
+  ApiPublicHandoffTickRoute: ApiPublicHandoffTickRoute,
   ApiPublicWhatsappWebhookRoute: ApiPublicWhatsappWebhookRoute,
   ApiPublicWidgetChatRoute: ApiPublicWidgetChatRoute,
   ApiPublicWidgetEmbedDotjsRoute: ApiPublicWidgetEmbedDotjsRoute,
