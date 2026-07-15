@@ -50,7 +50,11 @@ function SettingsPage() {
   }, [data]);
 
   async function save() {
-    const { error } = await supabase.from("settings").update(form).eq("id", 1);
+    const payload = {
+      ...form,
+      handoff_auto_return_min: form.handoff_auto_return_min > 0 ? form.handoff_auto_return_min : null,
+    };
+    const { error } = await supabase.from("settings").update(payload).eq("id", 1);
     if (error) return toast.error(error.message);
     toast.success("Configurações salvas");
     qc.invalidateQueries({ queryKey: ["settings"] });
