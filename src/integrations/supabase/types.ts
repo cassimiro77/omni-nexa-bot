@@ -254,6 +254,65 @@ export type Database = {
         }
         Relationships: []
       }
+      handoff_queue: {
+        Row: {
+          alert_count: number
+          assigned_at: string | null
+          assigned_to: string | null
+          contact_id: string
+          created_at: string
+          customer_notified_at: string | null
+          escalated_at: string | null
+          id: string
+          last_alert_at: string | null
+          last_operator_message_at: string | null
+          requested_at: string
+          resolved_at: string | null
+          status: Database["public"]["Enums"]["handoff_status"]
+          updated_at: string
+        }
+        Insert: {
+          alert_count?: number
+          assigned_at?: string | null
+          assigned_to?: string | null
+          contact_id: string
+          created_at?: string
+          customer_notified_at?: string | null
+          escalated_at?: string | null
+          id?: string
+          last_alert_at?: string | null
+          last_operator_message_at?: string | null
+          requested_at?: string
+          resolved_at?: string | null
+          status?: Database["public"]["Enums"]["handoff_status"]
+          updated_at?: string
+        }
+        Update: {
+          alert_count?: number
+          assigned_at?: string | null
+          assigned_to?: string | null
+          contact_id?: string
+          created_at?: string
+          customer_notified_at?: string | null
+          escalated_at?: string | null
+          id?: string
+          last_alert_at?: string | null
+          last_operator_message_at?: string | null
+          requested_at?: string
+          resolved_at?: string | null
+          status?: Database["public"]["Enums"]["handoff_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "handoff_queue_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       integrations: {
         Row: {
           config: Json
@@ -436,6 +495,12 @@ export type Database = {
         Row: {
           ai_system_prompt: string | null
           business_name: string | null
+          handoff_alert_phone: string | null
+          handoff_auto_return_min: number | null
+          handoff_escalate_min: number
+          handoff_reminder_interval_min: number
+          handoff_supervisor_phone: string | null
+          handoff_wait_customer_min: number
           id: number
           outbound_webhook_url: string | null
           reply_with_audio: boolean
@@ -446,6 +511,12 @@ export type Database = {
         Insert: {
           ai_system_prompt?: string | null
           business_name?: string | null
+          handoff_alert_phone?: string | null
+          handoff_auto_return_min?: number | null
+          handoff_escalate_min?: number
+          handoff_reminder_interval_min?: number
+          handoff_supervisor_phone?: string | null
+          handoff_wait_customer_min?: number
           id?: number
           outbound_webhook_url?: string | null
           reply_with_audio?: boolean
@@ -456,6 +527,12 @@ export type Database = {
         Update: {
           ai_system_prompt?: string | null
           business_name?: string | null
+          handoff_alert_phone?: string | null
+          handoff_auto_return_min?: number | null
+          handoff_escalate_min?: number
+          handoff_reminder_interval_min?: number
+          handoff_supervisor_phone?: string | null
+          handoff_wait_customer_min?: number
           id?: number
           outbound_webhook_url?: string | null
           reply_with_audio?: boolean
@@ -548,6 +625,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "operator"
+      handoff_status: "waiting" | "in_service" | "resolved" | "abandoned"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -676,6 +754,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "operator"],
+      handoff_status: ["waiting", "in_service", "resolved", "abandoned"],
     },
   },
 } as const
