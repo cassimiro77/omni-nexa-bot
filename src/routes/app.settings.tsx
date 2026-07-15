@@ -133,8 +133,31 @@ function SettingsPage() {
           </ol>
         </Card>
 
-
-
+        <Card icon={<Users className="h-4 w-4" />} title="Fila de atendimento humano">
+          <Field label="Telefone que recebe alertas (WhatsApp, com DDI, ex.: 5511999999999)">
+            <input value={form.handoff_alert_phone} onChange={(e) => setForm({ ...form, handoff_alert_phone: e.target.value })} className={inputCls} />
+          </Field>
+          <Field label="Telefone do supervisor (escalonamento)">
+            <input value={form.handoff_supervisor_phone} onChange={(e) => setForm({ ...form, handoff_supervisor_phone: e.target.value })} className={inputCls} />
+          </Field>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <Field label="Avisar cliente após (min)">
+              <input type="number" min={1} value={form.handoff_wait_customer_min} onChange={(e) => setForm({ ...form, handoff_wait_customer_min: Number(e.target.value) })} className={inputCls} />
+            </Field>
+            <Field label="Escalar ao supervisor após (min)">
+              <input type="number" min={1} value={form.handoff_escalate_min} onChange={(e) => setForm({ ...form, handoff_escalate_min: Number(e.target.value) })} className={inputCls} />
+            </Field>
+            <Field label="Intervalo dos lembretes (min)">
+              <input type="number" min={1} value={form.handoff_reminder_interval_min} onChange={(e) => setForm({ ...form, handoff_reminder_interval_min: Number(e.target.value) })} className={inputCls} />
+            </Field>
+            <Field label="Devolver ao bot após ociosidade (min · 0 desativa)">
+              <input type="number" min={0} value={form.handoff_auto_return_min} onChange={(e) => setForm({ ...form, handoff_auto_return_min: Number(e.target.value) })} className={inputCls} />
+            </Field>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Ao pedir para falar com humano, o cliente entra na fila. O alerta inicial vai imediatamente ao telefone acima; o cliente é avisado após o tempo definido; se ninguém assumir até o tempo de escalonamento, o supervisor é notificado. Lembretes recorrentes seguem o intervalo. Se o operador ficar ocioso por mais que o tempo de devolução, o contato volta ao bot.
+          </p>
+        </Card>
 
 
         <div>
