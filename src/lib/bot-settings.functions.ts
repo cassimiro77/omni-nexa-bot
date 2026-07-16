@@ -15,17 +15,24 @@ const TrainingSchema = z.object({
   sourcePrompts: z.array(SourcePromptEntry).max(20).optional().default([]),
 });
 
+async function orgId(supabase: import("@supabase/supabase-js").SupabaseClient, userId: string) {
+  const { data } = await supabase.from("organization_members").select("org_id").eq("user_id", userId).limit(1).maybeSingle();
+  if (!data?.org_id) throw new Error("Sem workspace");
+  return data.org_id as string;
+}
+
 export const getBotTraining = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    const org = await orgId(context.supabase, context.userId);
     const { data, error } = await context.supabase
       .from("settings")
       .select("business_name, welcome_message, ai_system_prompt, reply_with_audio, source_prompts, updated_at" as any)
-      .eq("id", 1)
-      .single();
+      .eq("org_id", org)
+      .maybeSingle();
 
     if (error) throw new Error(error.message);
-    const row = data as any;
+    const row = (data ?? {}) as any;
     const sp = (row.source_prompts ?? {}) as Record<string, string>;
     return {
       businessName: row.business_name ?? "NexaBot",
@@ -41,6 +48,7 @@ export const saveBotTraining = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => TrainingSchema.parse(input))
   .handler(async ({ data, context }) => {
+    const org = await orgId(context.supabase, context.userId);
     const spObj: Record<string, string> = {};
     for (const { source, prompt } of data.sourcePrompts) {
       if (source && prompt) spObj[source] = prompt;
@@ -54,7 +62,7 @@ export const saveBotTraining = createServerFn({ method: "POST" })
         reply_with_audio: data.replyWithAudio,
         source_prompts: spObj,
       } as any)
-      .eq("id", 1);
+      .eq("org_id", org);
 
     if (error) throw new Error(error.message);
     return { ok: true };
