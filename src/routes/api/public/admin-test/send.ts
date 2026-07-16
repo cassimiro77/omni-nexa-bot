@@ -127,10 +127,16 @@ export const Route = createFileRoute("/api/public/admin-test/send")({
 
           const { sendWhatsAppText, sendWhatsAppTemplate } = await import("@/lib/whatsapp.server");
 
+        // Resolve org_id from the user's first membership
+        const { data: mem } = await supabase.from("organization_members").select("org_id").eq("user_id", userId).limit(1).maybeSingle();
+        const orgId = mem?.org_id as string | undefined;
+        if (!orgId) return jsonError("Workspace não encontrado para este usuário.", 400);
+
         const { data: existing, error: existingError } = await supabase
           .from("contacts")
           .select("id")
           .eq("phone", phoneClean)
+          .eq("org_id", orgId)
           .maybeSingle();
         if (existingError) {
           console.error("[admin-test-send] contact lookup failed", { message: existingError.message });
@@ -141,7 +147,7 @@ export const Route = createFileRoute("/api/public/admin-test/send")({
         if (!contactId) {
           const { data: inserted, error: insertError } = await supabase
             .from("contacts")
-            .insert({ name: data.name, phone: phoneClean, origin: "admin_test", status: "new" })
+            .insert({ org_id: orgId, name: data.name, phone: phoneClean, origin: "admin_test", status: "new" })
             .select("id")
             .single();
           if (insertError) {
@@ -176,6 +182,7 @@ export const Route = createFileRoute("/api/public/admin-test/send")({
           });
 
         const { error: messageError } = await supabase.from("messages").insert({
+          org_id: orgId,
           contact_id: contactId,
           channel: "whatsapp",
           direction: "outbound",
