@@ -131,7 +131,7 @@ export const Route = createFileRoute("/api/public/widget/chat")({
         const { data: settings } = await supabaseAdmin
           .from("settings")
           .select("ai_system_prompt, business_name, welcome_message, source_prompts")
-          .eq("id", 1)
+          .eq("org_id", orgId)
           .maybeSingle();
 
         const sourcePrompts = (settings?.source_prompts as Record<string, string> | null) ?? {};
@@ -169,6 +169,7 @@ export const Route = createFileRoute("/api/public/widget/chat")({
         const newStatus = wantsHuman ? "human_requested" : "in_conversation";
 
         await supabaseAdmin.from("messages").insert({
+          org_id: orgId,
           contact_id: contactId,
           direction: "outbound",
           channel: "widget",
