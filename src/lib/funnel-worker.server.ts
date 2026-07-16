@@ -62,6 +62,7 @@ export async function tickFunnels(): Promise<{ advanced: number; completed: numb
               sendError = r.error;
             }
             await supabaseAdmin.from("messages").insert({
+              org_id: contact.org_id,
               contact_id: run.contact_id,
               direction: "outbound",
               content,
