@@ -31,12 +31,19 @@ export const Route = createFileRoute("/api/public/meta/leads/webhook")({
         try { payload = JSON.parse(raw); } catch { return new Response("bad json", { status: 400 }); }
 
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-        await supabaseAdmin.from("events").insert({ type: "meta.lead", payload: payload as never });
+        const { getFirstActiveOrgId } = await import("@/lib/org.server");
+        const orgId = await getFirstActiveOrgId(supabaseAdmin);
+        await supabaseAdmin.from("events").insert({ type: "meta.lead", payload: payload as never, ...(orgId ? { org_id: orgId } : {}) });
+
+        if (!orgId) {
+          return Response.json({ ok: true, ignored: "no_active_org" });
+        }
 
         // Helpers to persist a lead into contacts + messages, plus fire outbound webhook.
         async function persistLead(lead: { name?: string; phone?: string; email?: string; leadgen_id?: string; form_id?: string; ad_id?: string }) {
-          const isTestId = lead.leadgen_id && /^4{6,}$/.test(lead.leadgen_id.replace(/[^4]/g, "")); // Meta test payload uses 444444...
+          const isTestId = lead.leadgen_id && /^4{6,}$/.test(lead.leadgen_id.replace(/[^4]/g, ""));
           const { data: contact } = await supabaseAdmin.from("contacts").insert({
+            org_id: orgId!,
             name: lead.name ?? (isTestId ? "Lead de teste Meta" : null),
             phone: lead.phone ?? null,
             email: lead.email ?? null,
@@ -46,10 +53,11 @@ export const Route = createFileRoute("/api/public/meta/leads/webhook")({
             tags: lead.form_id ? [`form:${lead.form_id}`] : [],
           }).select("id").single();
 
-          const { data: settings } = await supabaseAdmin.from("settings").select("welcome_message, outbound_webhook_url").eq("id", 1).single();
+          const { data: settings } = await supabaseAdmin.from("settings").select("welcome_message, outbound_webhook_url").eq("org_id", orgId!).maybeSingle();
           if (contact && settings?.welcome_message) {
             const msg = settings.welcome_message.replace(/\{\{name\}\}/g, lead.name ?? "");
             await supabaseAdmin.from("messages").insert({
+              org_id: orgId!,
               contact_id: contact.id, direction: "outbound", channel: "whatsapp", content: msg, ai_used: false,
             });
           }
