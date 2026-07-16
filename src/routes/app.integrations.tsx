@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useOrgId } from "@/hooks/use-org";
 import { Plug, Plus, Trash2, Power, CheckCircle2, XCircle, ExternalLink } from "lucide-react";
 
 export const Route = createFileRoute("/app/integrations")({ component: IntegrationsPage });
@@ -59,6 +60,7 @@ const EVENT_OPTIONS = [
 
 function IntegrationsPage() {
   const qc = useQueryClient();
+  const { data: orgId } = useOrgId();
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [provider, setProvider] = useState<Provider>("hubspot");
@@ -77,7 +79,7 @@ function IntegrationsPage() {
 
   async function save() {
     if (!name.trim()) return toast.error("Dê um nome à integração");
-    const payload = { provider, name, config, events, enabled: true };
+    const payload = { org_id: orgId!, provider, name, config, events, enabled: true };
     const { error } = editingId
       ? await supabase.from("integrations").update(payload).eq("id", editingId)
       : await supabase.from("integrations").insert(payload);

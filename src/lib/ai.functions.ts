@@ -15,7 +15,9 @@ export const generateAIReply = createServerFn({ method: "POST" })
     const { data: msgs } = await supabase
       .from("messages").select("direction, content").eq("contact_id", data.contactId)
       .order("created_at", { ascending: false }).limit(20);
-    const { data: settings } = await supabase.from("settings").select("ai_system_prompt, business_name").eq("id", 1).single();
+    const { data: settings } = contact?.org_id
+      ? await supabase.from("settings").select("ai_system_prompt, business_name").eq("org_id", contact.org_id).maybeSingle()
+      : { data: null as { ai_system_prompt: string | null; business_name: string | null } | null };
 
     const history = [...(msgs ?? [])].reverse();
     const systemPrompt = `${settings?.ai_system_prompt ?? "Você é um assistente comercial."}\n\nNegócio: ${settings?.business_name ?? "NexaBot"}.\nLead: ${contact?.name ?? "(sem nome)"} (${contact?.phone ?? ""}). Origem: ${contact?.origin ?? ""}. Tags: ${(contact?.tags ?? []).join(", ") || "nenhuma"}.\nResponda em português, curto e objetivo (máx. 2 frases).`;

@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
 import { Plus, GitBranch, Trash2, Power } from "lucide-react";
 import { toast } from "sonner";
+import { useOrgId } from "@/hooks/use-org";
 
 export const Route = createFileRoute("/app/funnels")({ component: Funnels });
 
@@ -11,6 +12,7 @@ type Step = { type: "send_message" | "wait" | "add_tag" | "call_webhook"; conten
 
 function Funnels() {
   const qc = useQueryClient();
+  const { data: orgId } = useOrgId();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [desc, setDesc] = useState("");
@@ -24,9 +26,10 @@ function Funnels() {
   });
 
   async function save() {
+    if (!orgId) return toast.error("Workspace ainda carregando");
     if (!name.trim()) return toast.error("Nome obrigatório");
     const triggers = [trigger === "keyword" ? { type: "keyword", value: keyword } : { type: trigger }];
-    const { error } = await supabase.from("funnels").insert({ name, description: desc, triggers, steps, active: true });
+    const { error } = await supabase.from("funnels").insert({ org_id: orgId, name, description: desc, triggers, steps, active: true });
     if (error) return toast.error(error.message);
     toast.success("Funil criado");
     setOpen(false); setName(""); setDesc(""); setSteps([{ type: "send_message", content: "Oi {{name}}!" }]);

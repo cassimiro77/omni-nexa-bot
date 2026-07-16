@@ -9,9 +9,19 @@ export const Route = createFileRoute("/app/settings")({ component: SettingsPage 
 
 function SettingsPage() {
   const qc = useQueryClient();
+  const { data: orgId } = useQuery({
+    queryKey: ["current-org"],
+    queryFn: async () => {
+      const { data: u } = await supabase.auth.getUser();
+      if (!u.user) return null;
+      const { data: mem } = await supabase.from("organization_members").select("org_id").eq("user_id", u.user.id).limit(1).maybeSingle();
+      return (mem?.org_id as string | null) ?? null;
+    },
+  });
   const { data } = useQuery({
-    queryKey: ["settings"],
-    queryFn: async () => (await supabase.from("settings").select("*").eq("id", 1).single()).data,
+    queryKey: ["settings", orgId],
+    enabled: !!orgId,
+    queryFn: async () => (await supabase.from("settings").select("*").eq("org_id", orgId!).maybeSingle()).data,
   });
   const { data: lastWhatsappEvent } = useQuery({
     queryKey: ["last-whatsapp-event"],
@@ -50,11 +60,12 @@ function SettingsPage() {
   }, [data]);
 
   async function save() {
+    if (!orgId) return toast.error("Workspace ainda carregando");
     const payload = {
       ...form,
       handoff_auto_return_min: form.handoff_auto_return_min > 0 ? form.handoff_auto_return_min : null,
     };
-    const { error } = await supabase.from("settings").update(payload).eq("id", 1);
+    const { error } = await supabase.from("settings").update(payload).eq("org_id", orgId);
     if (error) return toast.error(error.message);
     toast.success("Configurações salvas");
     qc.invalidateQueries({ queryKey: ["settings"] });

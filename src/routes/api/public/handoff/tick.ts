@@ -19,7 +19,7 @@ async function runTick() {
   const { data: settings } = await supabaseAdmin
     .from("settings")
     .select("handoff_alert_phone, handoff_supervisor_phone, handoff_wait_customer_min, handoff_escalate_min, handoff_reminder_interval_min, handoff_auto_return_min, business_name")
-    .eq("id", 1)
+    .order("created_at", { ascending: true }).limit(1)
     .maybeSingle();
 
   const alertPhone = settings?.handoff_alert_phone?.trim() || null;
@@ -31,7 +31,7 @@ async function runTick() {
 
   const { data: tickets } = await supabaseAdmin
     .from("handoff_queue")
-    .select("id, contact_id, status, requested_at, assigned_at, last_alert_at, alert_count, escalated_at, customer_notified_at, last_operator_message_at, contacts(name, phone)")
+    .select("id, contact_id, org_id, status, requested_at, assigned_at, last_alert_at, alert_count, escalated_at, customer_notified_at, last_operator_message_at, contacts(name, phone)")
     .in("status", ["waiting", "in_service"]);
 
   const now = Date.now();
@@ -66,6 +66,7 @@ async function runTick() {
       const r = await sendWhatsAppText(phone, notice);
       if (r.ok) {
         await supabaseAdmin.from("messages").insert({
+          org_id: t.org_id,
           contact_id: t.contact_id,
           direction: "outbound",
           channel: "whatsapp",

@@ -108,8 +108,9 @@ export async function dispatchPending(): Promise<{ dispatched: number; failed: n
     .eq("enabled", true);
   const { data: settings } = await supabaseAdmin
     .from("settings")
-    .select("outbound_webhook_url")
-    .eq("id", 1)
+    .select("outbound_webhook_url, org_id")
+    .order("created_at", { ascending: true })
+    .limit(1)
     .maybeSingle();
 
   let dispatched = 0;

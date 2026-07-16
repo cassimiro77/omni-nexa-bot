@@ -10,7 +10,7 @@ export const sendNPSInvite = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => IdSchema.parse(d))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
-    const { data: contact } = await supabase.from("contacts").select("phone, name").eq("id", data.contactId).single();
+    const { data: contact } = await supabase.from("contacts").select("phone, name, org_id").eq("id", data.contactId).single();
     if (!contact?.phone) throw new Error("Contato sem telefone");
 
     const message = `Obrigado pelo contato${contact.name ? ", " + contact.name : ""}! 🙏\n\nDe 0 a 10, qual a chance de você nos recomendar? Responda apenas com o número.`;
@@ -20,6 +20,7 @@ export const sendNPSInvite = createServerFn({ method: "POST" })
     if (!send.ok) throw new Error(send.error ?? "Falha ao enviar");
 
     await supabase.from("messages").insert({
+      org_id: contact.org_id,
       contact_id: data.contactId, direction: "outbound", channel: "whatsapp",
       content: message, ai_used: false, wa_message_id: send.wa_message_id ?? null,
       metadata: { nps_invite: true },
