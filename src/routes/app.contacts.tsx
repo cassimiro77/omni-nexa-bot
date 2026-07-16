@@ -4,11 +4,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { useOrgId } from "@/hooks/use-org";
 
 export const Route = createFileRoute("/app/contacts")({ component: Contacts });
 
 function Contacts() {
   const qc = useQueryClient();
+  const { data: orgId } = useOrgId();
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ name: "", phone: "", email: "", origin: "manual" });
@@ -23,8 +25,9 @@ function Contacts() {
   );
 
   async function create() {
+    if (!orgId) return toast.error("Workspace ainda carregando");
     if (!form.name && !form.phone) return toast.error("Nome ou telefone obrigatório");
-    const { error } = await supabase.from("contacts").insert(form);
+    const { error } = await supabase.from("contacts").insert({ ...form, org_id: orgId });
     if (error) return toast.error(error.message);
     toast.success("Lead criado");
     setOpen(false); setForm({ name: "", phone: "", email: "", origin: "manual" });
