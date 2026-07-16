@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useOrgId } from "@/hooks/use-org";
 import { FileText, Plus, Trash2 } from "lucide-react";
 
 export const Route = createFileRoute("/app/templates")({ component: TemplatesPage });
