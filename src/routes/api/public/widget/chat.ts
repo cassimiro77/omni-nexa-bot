@@ -40,11 +40,15 @@ export const Route = createFileRoute("/api/public/widget/chat")({
         const { source, sessionId, message, name, email, history } = parsed.data;
 
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        const { getFirstActiveOrgId } = await import("@/lib/org.server");
+        const orgId = await getFirstActiveOrgId(supabaseAdmin);
+        if (!orgId) return Response.json({ error: "no_active_org" }, { status: 503, headers: CORS });
 
         // Upsert-ish contact by (origin, metadata.session_id)
         const { data: existing } = await supabaseAdmin
           .from("contacts")
           .select("id, name, email, metadata")
+          .eq("org_id", orgId)
           .eq("origin", source)
           .contains("metadata", { session_id: sessionId })
           .maybeSingle();
@@ -55,6 +59,7 @@ export const Route = createFileRoute("/api/public/widget/chat")({
           const { data: ins, error: insErr } = await supabaseAdmin
             .from("contacts")
             .insert({
+              org_id: orgId,
               origin: source,
               name: name ?? null,
               email: email ?? null,
@@ -92,6 +97,7 @@ export const Route = createFileRoute("/api/public/widget/chat")({
 
         // Store inbound message
         await supabaseAdmin.from("messages").insert({
+          org_id: orgId,
           contact_id: contactId,
           direction: "inbound",
           channel: "widget",
