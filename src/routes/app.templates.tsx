@@ -10,6 +10,7 @@ export const Route = createFileRoute("/app/templates")({ component: TemplatesPag
 
 function TemplatesPage() {
   const qc = useQueryClient();
+  const { data: orgId } = useOrgId();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ name: "", language: "pt_BR", category: "MARKETING", body: "", meta_template_name: "" });
 
@@ -19,9 +20,10 @@ function TemplatesPage() {
   });
 
   async function save() {
+    if (!orgId) return toast.error("Workspace ainda carregando");
     if (!form.name.trim() || !form.body.trim()) return toast.error("Nome e corpo obrigatórios");
     const variables = Array.from(form.body.matchAll(/\{\{\s*(\w+)\s*\}\}/g)).map((m) => m[1]);
-    const { error } = await supabase.from("message_templates").insert({ ...form, variables, status: "draft" });
+    const { error } = await supabase.from("message_templates").insert({ org_id: orgId, ...form, variables, status: "draft" });
     if (error) return toast.error(error.message);
     toast.success("Template salvo");
     setOpen(false); setForm({ name: "", language: "pt_BR", category: "MARKETING", body: "", meta_template_name: "" });
