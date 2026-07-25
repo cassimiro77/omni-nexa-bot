@@ -42,6 +42,7 @@ function SettingsPage() {
     handoff_alert_phone: "", handoff_supervisor_phone: "",
     handoff_wait_customer_min: 30, handoff_escalate_min: 70, handoff_reminder_interval_min: 30,
     handoff_auto_return_min: 0,
+    wa_phone_number_id: "", wa_token: "",
   });
 
   useEffect(() => {
@@ -56,8 +57,11 @@ function SettingsPage() {
       handoff_escalate_min: (data as { handoff_escalate_min?: number }).handoff_escalate_min ?? 70,
       handoff_reminder_interval_min: (data as { handoff_reminder_interval_min?: number }).handoff_reminder_interval_min ?? 30,
       handoff_auto_return_min: (data as { handoff_auto_return_min?: number | null }).handoff_auto_return_min ?? 0,
+      wa_phone_number_id: (data as { wa_phone_number_id?: string | null }).wa_phone_number_id ?? "",
+      wa_token: (data as { wa_token?: string | null }).wa_token ?? "",
     });
   }, [data]);
+
 
   async function save() {
     if (!orgId) return toast.error("Workspace ainda carregando");
