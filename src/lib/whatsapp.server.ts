@@ -9,7 +9,9 @@ type MetaError = {
   fbtrace_id?: string;
 };
 
-function cleanSecret(value: string | undefined): string {
+export type WhatsAppCreds = { token?: string | null; phoneId?: string | null };
+
+function cleanSecret(value: string | undefined | null): string {
   return (value ?? "")
     .trim()
     .replace(/^['"]|['"]$/g, "")
@@ -17,20 +19,14 @@ function cleanSecret(value: string | undefined): string {
     .trim();
 }
 
-function getMetaCredentials(): { token?: string; phoneId?: string; error?: string } {
-  const token = cleanSecret(process.env.META_WA_TOKEN);
-  const phoneId = cleanSecret(process.env.META_WA_PHONE_NUMBER_ID);
-
-  if (!token || !phoneId) return { error: "Credenciais da Meta/WhatsApp ausentes." };
-
-  console.info("[whatsapp] credential shape", {
-    hasToken: Boolean(token),
-    tokenHasJwtShape: token.split(".").length === 3,
-    tokenLength: token.length,
-    hasPhoneId: Boolean(phoneId),
-    phoneIdLength: phoneId.length,
-  });
-
+/**
+ * Resolves WhatsApp credentials.
+ * Priority: per-org creds (from settings) > env vars (legacy fallback).
+ */
+function resolveCreds(override?: WhatsAppCreds): { token?: string; phoneId?: string; error?: string } {
+  const token = cleanSecret(override?.token) || cleanSecret(process.env.META_WA_TOKEN);
+  const phoneId = cleanSecret(override?.phoneId) || cleanSecret(process.env.META_WA_PHONE_NUMBER_ID);
+  if (!token || !phoneId) return { error: "Credenciais da Meta/WhatsApp ausentes. Configure em Configurações → WhatsApp." };
   return { token, phoneId };
 }
 
@@ -38,13 +34,17 @@ function formatMetaError(error: MetaError | undefined, status: number): string {
   const raw = error?.message ?? `HTTP ${status}`;
   const authLike = /auth|oauth|token|permission|access/i.test(raw) || error?.code === 190;
   if (authLike) {
-    return `Meta rejeitou a credencial do WhatsApp (${error?.type ?? "erro"}${error?.code ? ` ${error.code}` : ""}). Atualize META_WA_TOKEN com um token válido do mesmo app/número. Detalhe Meta: ${raw}`;
+    return `Meta rejeitou a credencial do WhatsApp (${error?.type ?? "erro"}${error?.code ? ` ${error.code}` : ""}). Verifique o token do WhatsApp nas Configurações do workspace. Detalhe Meta: ${raw}`;
   }
   return raw;
 }
 
-export async function sendWhatsAppText(to: string, body: string): Promise<{ ok: boolean; wa_message_id?: string; error?: string }> {
-  const { token, phoneId, error: credentialsError } = getMetaCredentials();
+export async function sendWhatsAppText(
+  to: string,
+  body: string,
+  creds?: WhatsAppCreds,
+): Promise<{ ok: boolean; wa_message_id?: string; error?: string }> {
+  const { token, phoneId, error: credentialsError } = resolveCreds(creds);
   if (credentialsError || !token || !phoneId) return { ok: false, error: credentialsError };
 
   const clean = to.replace(/[^\d]/g, "");
@@ -72,8 +72,12 @@ export async function sendWhatsAppText(to: string, body: string): Promise<{ ok: 
   }
 }
 
-export async function sendWhatsAppAudioLink(to: string, link: string): Promise<{ ok: boolean; wa_message_id?: string; error?: string }> {
-  const { token, phoneId, error: credentialsError } = getMetaCredentials();
+export async function sendWhatsAppAudioLink(
+  to: string,
+  link: string,
+  creds?: WhatsAppCreds,
+): Promise<{ ok: boolean; wa_message_id?: string; error?: string }> {
+  const { token, phoneId, error: credentialsError } = resolveCreds(creds);
   if (credentialsError || !token || !phoneId) return { ok: false, error: credentialsError };
   const clean = to.replace(/[^\d]/g, "");
   const res = await fetch(`${GRAPH}/${phoneId}/messages`, {
@@ -95,8 +99,9 @@ export async function sendWhatsAppTemplate(
   to: string,
   templateName: string,
   languageCode = "en_US",
+  creds?: WhatsAppCreds,
 ): Promise<{ ok: boolean; wa_message_id?: string; error?: string }> {
-  const { token, phoneId, error: credentialsError } = getMetaCredentials();
+  const { token, phoneId, error: credentialsError } = resolveCreds(creds);
   if (credentialsError || !token || !phoneId) return { ok: false, error: credentialsError };
   const clean = to.replace(/[^\d]/g, "");
   try {
@@ -123,12 +128,13 @@ export async function sendWhatsAppTemplate(
   }
 }
 
-
-
 // Downloads a WhatsApp media file (voice notes/audio) as a Buffer + mime.
-export async function downloadWhatsAppMedia(mediaId: string): Promise<{ ok: boolean; data?: ArrayBuffer; mime?: string; error?: string }> {
-  const token = cleanSecret(process.env.META_WA_TOKEN);
-  if (!token) return { ok: false, error: "META_WA_TOKEN ausente" };
+export async function downloadWhatsAppMedia(
+  mediaId: string,
+  creds?: WhatsAppCreds,
+): Promise<{ ok: boolean; data?: ArrayBuffer; mime?: string; error?: string }> {
+  const token = cleanSecret(creds?.token) || cleanSecret(process.env.META_WA_TOKEN);
+  if (!token) return { ok: false, error: "Token do WhatsApp ausente" };
 
   const metaRes = await fetch(`${GRAPH}/${mediaId}`, { headers: { Authorization: `Bearer ${token}` } });
   if (!metaRes.ok) return { ok: false, error: `Meta media meta HTTP ${metaRes.status}` };
