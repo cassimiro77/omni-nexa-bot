@@ -758,6 +758,8 @@ export type Database = {
           reply_with_audio: boolean
           source_prompts: Json
           updated_at: string
+          wa_phone_number_id: string | null
+          wa_token: string | null
           welcome_message: string | null
         }
         Insert: {
@@ -775,6 +777,8 @@ export type Database = {
           reply_with_audio?: boolean
           source_prompts?: Json
           updated_at?: string
+          wa_phone_number_id?: string | null
+          wa_token?: string | null
           welcome_message?: string | null
         }
         Update: {
@@ -792,6 +796,8 @@ export type Database = {
           reply_with_audio?: boolean
           source_prompts?: Json
           updated_at?: string
+          wa_phone_number_id?: string | null
+          wa_token?: string | null
           welcome_message?: string | null
         }
         Relationships: [
