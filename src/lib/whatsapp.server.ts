@@ -30,6 +30,22 @@ function resolveCreds(override?: WhatsAppCreds): { token?: string; phoneId?: str
   return { token, phoneId };
 }
 
+/**
+ * Loads per-org WhatsApp credentials from the settings table.
+ * Returns empty creds if the org has none configured (caller will fall back to env).
+ */
+export async function getOrgWhatsAppCreds(orgId: string | null | undefined): Promise<WhatsAppCreds> {
+  if (!orgId) return {};
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data } = await supabaseAdmin
+    .from("settings")
+    .select("wa_phone_number_id, wa_token")
+    .eq("org_id", orgId)
+    .maybeSingle();
+  return { token: data?.wa_token ?? null, phoneId: data?.wa_phone_number_id ?? null };
+}
+
+
 function formatMetaError(error: MetaError | undefined, status: number): string {
   const raw = error?.message ?? `HTTP ${status}`;
   const authLike = /auth|oauth|token|permission|access/i.test(raw) || error?.code === 190;
