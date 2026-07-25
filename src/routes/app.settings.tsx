@@ -68,12 +68,15 @@ function SettingsPage() {
     const payload = {
       ...form,
       handoff_auto_return_min: form.handoff_auto_return_min > 0 ? form.handoff_auto_return_min : null,
+      wa_phone_number_id: form.wa_phone_number_id.trim() || null,
+      wa_token: form.wa_token.trim() || null,
     };
     const { error } = await supabase.from("settings").update(payload).eq("org_id", orgId);
     if (error) return toast.error(error.message);
     toast.success("Configurações salvas");
     qc.invalidateQueries({ queryKey: ["settings"] });
   }
+
 
   const origin = "https://project--e0efd13b-a401-4810-b28e-430a1d408866.lovable.app";
   const publicOrigin = "https://omni-nexa-bot.lovable.app";
