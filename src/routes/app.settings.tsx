@@ -116,8 +116,21 @@ function SettingsPage() {
           <p className="text-xs text-muted-foreground">Cada novo lead pode ser enviado a esta URL para acionar seu CRM/ERP.</p>
         </Card>
 
+        <Card icon={<KeyRound className="h-4 w-4" />} title="WhatsApp Cloud API (credenciais desta workspace)">
+          <Field label="Phone Number ID">
+            <input value={form.wa_phone_number_id} onChange={(e) => setForm({ ...form, wa_phone_number_id: e.target.value })} placeholder="Ex.: 1284573314730216" className={inputCls} />
+          </Field>
+          <Field label="Access Token (permanente ou de teste)">
+            <input type="password" value={form.wa_token} onChange={(e) => setForm({ ...form, wa_token: e.target.value })} placeholder="EAAG…" className={inputCls} autoComplete="off" />
+          </Field>
+          <p className="text-xs text-muted-foreground">
+            Cada workspace usa seu próprio número. Copie o <strong>Phone Number ID</strong> e o <strong>Token</strong> do painel da Meta (WhatsApp → Configuração da API) e cole aqui. O webhook abaixo é o mesmo para todas as workspaces — o roteamento é feito pelo Phone Number ID.
+          </p>
+        </Card>
+
         <Card icon={<KeyRound className="h-4 w-4" />} title="URLs de webhook (configure na Meta)">
           <ReadOnly label="WhatsApp Cloud API" value={waWebhook} onCopy={() => copy(waWebhook)} />
+
           <ReadOnly label="WhatsApp Cloud API (domínio publicado)" value={`${publicOrigin}/api/public/whatsapp/webhook`} onCopy={() => copy(`${publicOrigin}/api/public/whatsapp/webhook`)} />
           <ReadOnly label="Meta Lead Ads" value={leadsWebhook} onCopy={() => copy(leadsWebhook)} />
           <p className="text-xs text-muted-foreground">
