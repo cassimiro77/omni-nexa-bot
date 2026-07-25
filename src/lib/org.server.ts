@@ -1,7 +1,7 @@
 // Helpers to resolve the current org_id.
-// MVP multi-tenant: each user belongs to 1 org (created automatically on signup).
-// For public webhooks/cron, we pick the first active org as fallback until
-// per-org integration routing (by phone_number_id) is wired up.
+// Multi-tenant: each user belongs to 1 org (created automatically on signup).
+// Public webhooks resolve the org by matching the incoming Meta phone_number_id
+// against settings.wa_phone_number_id.
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -19,7 +19,7 @@ export async function getUserOrgId(supabase: SupabaseClient, userId: string): Pr
   return data.org_id as string;
 }
 
-/** For public webhooks/cron: returns the first active org (MVP single-tenant fallback). */
+/** For cron/fallback: returns the first active org. */
 export async function getFirstActiveOrgId(supabaseAdmin: SupabaseClient): Promise<string | null> {
   const { data } = await supabaseAdmin
     .from("organizations")
@@ -31,10 +31,47 @@ export async function getFirstActiveOrgId(supabaseAdmin: SupabaseClient): Promis
   return (data?.id as string) ?? null;
 }
 
-/** Resolves the org_id for an incoming WhatsApp webhook. TODO: match by phone_number_id when per-org integrations are wired. */
-export async function resolveOrgIdForWhatsAppWebhook(
+/**
+ * Resolves org + credentials for an inbound WhatsApp webhook.
+ *
+ * Priority:
+ *  1. Match settings.wa_phone_number_id === phoneNumberId (multi-tenant).
+ *  2. Fallback to the org whose settings has no wa_phone_number_id AND env
+ *     META_WA_PHONE_NUMBER_ID matches phoneNumberId (legacy single-tenant).
+ *  3. Fallback to the first active org (never used in production, only for
+ *     legacy setups where no per-org number is configured).
+ */
+export async function resolveOrgForWhatsAppWebhook(
   supabaseAdmin: SupabaseClient,
-  _phoneNumberId?: string,
-): Promise<string | null> {
-  return getFirstActiveOrgId(supabaseAdmin);
+  phoneNumberId: string | undefined,
+): Promise<{ orgId: string; waPhoneNumberId: string | null; waToken: string | null } | null> {
+  if (phoneNumberId) {
+    const { data } = await supabaseAdmin
+      .from("settings")
+      .select("org_id, wa_phone_number_id, wa_token")
+      .eq("wa_phone_number_id", phoneNumberId)
+      .maybeSingle();
+    if (data?.org_id) {
+      return {
+        orgId: data.org_id as string,
+        waPhoneNumberId: (data.wa_phone_number_id as string | null) ?? null,
+        waToken: (data.wa_token as string | null) ?? null,
+      };
+    }
+  }
+
+  // Legacy fallback: match env-configured number to first active org.
+  const envPhoneId = process.env.META_WA_PHONE_NUMBER_ID;
+  if (phoneNumberId && envPhoneId && phoneNumberId === envPhoneId) {
+    const orgId = await getFirstActiveOrgId(supabaseAdmin);
+    if (orgId) return { orgId, waPhoneNumberId: null, waToken: null };
+  }
+
+  // Absolute fallback (no phone id in payload).
+  if (!phoneNumberId) {
+    const orgId = await getFirstActiveOrgId(supabaseAdmin);
+    if (orgId) return { orgId, waPhoneNumberId: null, waToken: null };
+  }
+
+  return null;
 }

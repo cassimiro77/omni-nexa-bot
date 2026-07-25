@@ -15,8 +15,10 @@ export const sendNPSInvite = createServerFn({ method: "POST" })
 
     const message = `Obrigado pelo contato${contact.name ? ", " + contact.name : ""}! 🙏\n\nDe 0 a 10, qual a chance de você nos recomendar? Responda apenas com o número.`;
 
-    const { sendWhatsAppText } = await import("./whatsapp.server");
-    const send = await sendWhatsAppText(contact.phone, message);
+    const { sendWhatsAppText, getOrgWhatsAppCreds } = await import("./whatsapp.server");
+    const creds = await getOrgWhatsAppCreds(contact.org_id);
+    const send = await sendWhatsAppText(contact.phone, message, creds);
+
     if (!send.ok) throw new Error(send.error ?? "Falha ao enviar");
 
     await supabase.from("messages").insert({

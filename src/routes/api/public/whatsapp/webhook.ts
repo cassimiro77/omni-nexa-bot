@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import type { WhatsAppCreds } from "@/lib/whatsapp.server";
 
 type WebhookMessage = {
   from?: string;
@@ -29,7 +30,8 @@ function compactError(error: unknown) {
 
 // WhatsApp Cloud API webhook.
 // GET  -> verify challenge
-// POST -> receive messages: transcribe audio, handle handoff/NPS, otherwise reply via AI.
+// POST -> receive messages: route to org by phone_number_id, transcribe audio,
+//         handle handoff/NPS, otherwise reply via AI.
 export const Route = createFileRoute("/api/public/whatsapp/webhook")({
   server: {
     handlers: {
@@ -47,9 +49,7 @@ export const Route = createFileRoute("/api/public/whatsapp/webhook")({
       POST: async ({ request }) => {
         const raw = await request.text();
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-        const { getFirstActiveOrgId } = await import("@/lib/org.server");
-        const orgId = await getFirstActiveOrgId(supabaseAdmin);
-        if (!orgId) return Response.json({ ok: true, ignored: "no_active_org" });
+        const { resolveOrgForWhatsAppWebhook } = await import("@/lib/org.server");
 
         const sig = request.headers.get("x-hub-signature-256") ?? "";
         const appSecret = process.env.META_APP_SECRET;
@@ -65,14 +65,26 @@ export const Route = createFileRoute("/api/public/whatsapp/webhook")({
         let payload: unknown = null;
         try { payload = JSON.parse(raw); } catch { /* keep raw */ }
 
-        const expectedPhoneNumberId = process.env.META_WA_PHONE_NUMBER_ID;
-        const entriesForValidation = (payload as { entry?: unknown[] } | null)?.entry ?? [];
-        const isExpectedPhoneNumber = !expectedPhoneNumberId || entriesForValidation.some((entry) =>
-          (((entry as { changes?: unknown[] }).changes ?? []) as unknown[]).some((ch) =>
-            (ch as { value?: { metadata?: { phone_number_id?: string } } }).value?.metadata?.phone_number_id === expectedPhoneNumberId
-          )
-        );
-        const canProcess = sigOk || (!sig && isExpectedPhoneNumber);
+        // Extract the first phone_number_id from the payload — routes to the org.
+        const entries = ((payload as { entry?: unknown[] } | null)?.entry ?? []) as unknown[];
+        let inboundPhoneNumberId: string | undefined;
+        for (const entry of entries) {
+          const changes = ((entry as { changes?: unknown[] }).changes ?? []) as unknown[];
+          for (const ch of changes) {
+            const md = (ch as { value?: { metadata?: { phone_number_id?: string } } }).value?.metadata;
+            if (md?.phone_number_id) { inboundPhoneNumberId = md.phone_number_id; break; }
+          }
+          if (inboundPhoneNumberId) break;
+        }
+
+        const resolved = await resolveOrgForWhatsAppWebhook(supabaseAdmin, inboundPhoneNumberId);
+        if (!resolved) {
+          // No workspace is configured for this number — log & ignore.
+          return Response.json({ ok: true, ignored: "no_org_for_phone_number_id", phone_number_id: inboundPhoneNumberId ?? null });
+        }
+        const orgId = resolved.orgId;
+        const creds: WhatsAppCreds = { token: resolved.waToken, phoneId: resolved.waPhoneNumberId };
+        const canProcess = sigOk || !sig;
 
         await supabaseAdmin.from("events").insert({
           org_id: orgId,
@@ -80,7 +92,7 @@ export const Route = createFileRoute("/api/public/whatsapp/webhook")({
           payload: {
             signature_valid: sigOk,
             has_signature: Boolean(sig),
-            phone_number_valid: isExpectedPhoneNumber,
+            routed_phone_number_id: inboundPhoneNumberId ?? null,
             body: payload ?? { raw: raw.slice(0, 2000) },
           } as never,
         });
@@ -92,7 +104,6 @@ export const Route = createFileRoute("/api/public/whatsapp/webhook")({
         let skippedMessages = 0;
 
         try {
-          const entries = (payload as { entry?: unknown[] }).entry ?? [];
           for (const entry of entries) {
             const changes = ((entry as { changes?: unknown[] }).changes ?? []) as unknown[];
             for (const ch of changes) {
@@ -148,7 +159,7 @@ export const Route = createFileRoute("/api/public/whatsapp/webhook")({
                   audioMeta = { media_id: mediaId, mime };
                   try {
                     const { downloadWhatsAppMedia, transcribeAudio } = await import("@/lib/whatsapp.server");
-                    const dl = await downloadWhatsAppMedia(mediaId);
+                    const dl = await downloadWhatsAppMedia(mediaId, creds);
                     if (dl.ok && dl.data) {
                       const tr = await transcribeAudio(dl.data, dl.mime ?? mime);
                       if (tr.ok && tr.text) content = tr.text;
@@ -186,9 +197,8 @@ export const Route = createFileRoute("/api/public/whatsapp/webhook")({
                 }
                 if (!existing) continue;
 
-                // Atomic dedupe: try to insert first. If the wa_message_id
-                // already exists (unique index), Meta is retrying the same
-                // webhook — skip the whole pipeline so we don't reply twice.
+                // Atomic dedupe: try to insert first. If wa_message_id already
+                // exists (unique index), Meta is retrying — skip the pipeline.
                 const inboundInsert = await supabaseAdmin.from("messages").insert({
                   org_id: orgId,
                   contact_id: existing.id, direction: "inbound", channel: "whatsapp",
@@ -200,7 +210,6 @@ export const Route = createFileRoute("/api/public/whatsapp/webhook")({
                   },
                 }).select("id").maybeSingle();
                 if (inboundInsert.error) {
-                  // 23505 = unique_violation → duplicate webhook, silently skip.
                   const code = (inboundInsert.error as { code?: string }).code;
                   if (code === "23505") {
                     skippedMessages += 1;
@@ -235,7 +244,7 @@ export const Route = createFileRoute("/api/public/whatsapp/webhook")({
                       ? "Obrigado pela avaliação! Vamos continuar melhorando. 🙏"
                       : "Obrigado pelo retorno. Vamos analisar como melhorar sua experiência. 🙏";
                     const { sendWhatsAppText } = await import("@/lib/whatsapp.server");
-                    const s = await sendWhatsAppText(from, thanks);
+                    const s = await sendWhatsAppText(from, thanks, creds);
                     await supabaseAdmin.from("messages").insert({
                       org_id: orgId,
                       contact_id: existing.id, direction: "outbound", channel: "whatsapp",
@@ -245,7 +254,6 @@ export const Route = createFileRoute("/api/public/whatsapp/webhook")({
                     repliedMessages += s.ok ? 1 : 0;
                     continue;
                   }
-                  // If not a number, fall through to normal flow
                 }
 
                 // === Handoff: skip bot if human is handling ===
@@ -257,7 +265,7 @@ export const Route = createFileRoute("/api/public/whatsapp/webhook")({
                   await supabaseAdmin.from("contacts").update({ status: "human_requested" }).eq("id", existing.id);
                   const notice = "Certo! Vou te transferir para um atendente. Em instantes alguém do time responde por aqui. 🙌";
                   const { sendWhatsAppText } = await import("@/lib/whatsapp.server");
-                  const s = await sendWhatsAppText(from, notice);
+                  const s = await sendWhatsAppText(from, notice, creds);
                   await supabaseAdmin.from("messages").insert({
                     org_id: orgId,
                     contact_id: existing.id, direction: "outbound", channel: "whatsapp",
@@ -272,20 +280,23 @@ export const Route = createFileRoute("/api/public/whatsapp/webhook")({
                 if (isFirstContact) {
                   const { data: settings } = await supabaseAdmin.from("settings").select("welcome_message, business_name").eq("org_id", orgId).maybeSingle();
                   const biz = settings?.business_name ?? "NexaBot";
-                  const welcome = settings?.welcome_message?.trim()
-                    ? settings.welcome_message
-                    : `Olá! 👋 Sou o assistente da ${biz}. Como posso te ajudar hoje?\n\n1️⃣ Vendas / Planos\n2️⃣ Suporte\n3️⃣ Dúvidas frequentes\n4️⃣ Falar com um atendente\n\nÉ só me dizer!`;
-                  const { sendWhatsAppText } = await import("@/lib/whatsapp.server");
-                  const s = await sendWhatsAppText(from, welcome);
-                  await supabaseAdmin.from("messages").insert({
-                    org_id: orgId,
-                    contact_id: existing.id, direction: "outbound", channel: "whatsapp",
-                    content: welcome, ai_used: false, wa_message_id: s.wa_message_id ?? null,
-                    metadata: { welcome: true },
-                  });
-                  repliedMessages += s.ok ? 1 : 0;
-                  await supabaseAdmin.from("contacts").update({ status: "in_conversation" }).eq("id", existing.id);
-                  continue;
+                  const welcomeRaw = settings?.welcome_message?.trim();
+                  if (welcomeRaw) {
+                    const { sendWhatsAppText } = await import("@/lib/whatsapp.server");
+                    const s = await sendWhatsAppText(from, welcomeRaw, creds);
+                    await supabaseAdmin.from("messages").insert({
+                      org_id: orgId,
+                      contact_id: existing.id, direction: "outbound", channel: "whatsapp",
+                      content: welcomeRaw, ai_used: false, wa_message_id: s.wa_message_id ?? null,
+                      metadata: { welcome: true },
+                    });
+                    repliedMessages += s.ok ? 1 : 0;
+                    await supabaseAdmin.from("contacts").update({ status: "in_conversation" }).eq("id", existing.id);
+                    continue;
+                  }
+                  // No welcome message configured → fall through to AI reply so
+                  // the AI greets the user (with name, dynamically).
+                  void biz;
                 }
 
                 // === AI auto-reply ===
@@ -297,8 +308,9 @@ export const Route = createFileRoute("/api/public/whatsapp/webhook")({
                   const { data: history } = await supabaseAdmin
                     .from("messages").select("direction, content").eq("contact_id", existing.id)
                     .order("created_at", { ascending: false }).limit(12);
+                  const contactName = waContact?.profile?.name ?? "";
                   const msgs = [
-                    { role: "system", content: `${settings?.ai_system_prompt ?? "Você é um assistente comercial."} Negócio: ${settings?.business_name ?? "NexaBot"}. Responda curto e cordial, em português. Se o cliente pedir status de pedido, peça o número do pedido. Se pedir agendamento, sugira 2 horários próximos e peça confirmação.` },
+                    { role: "system", content: `${settings?.ai_system_prompt ?? "Você é um assistente comercial."} Negócio: ${settings?.business_name ?? "NexaBot"}. Nome do cliente: ${contactName || "desconhecido"}. Responda curto e cordial, em português. Se o cliente pedir status de pedido, peça o número do pedido. Se pedir agendamento, sugira 2 horários próximos e peça confirmação.` },
                     ...[...(history ?? [])].reverse().map((h) => ({
                       role: h.direction === "inbound" ? "user" : "assistant",
                       content: h.content,
@@ -315,7 +327,7 @@ export const Route = createFileRoute("/api/public/whatsapp/webhook")({
                   if (!reply) continue;
 
                   const { sendWhatsAppText, sendWhatsAppAudioLink, synthesizeAndUpload } = await import("@/lib/whatsapp.server");
-                  const sendText = await sendWhatsAppText(from, reply);
+                  const sendText = await sendWhatsAppText(from, reply, creds);
                   await supabaseAdmin.from("messages").insert({
                     org_id: orgId,
                     contact_id: existing.id, direction: "outbound", channel: "whatsapp",
@@ -328,7 +340,7 @@ export const Route = createFileRoute("/api/public/whatsapp/webhook")({
                     try {
                       const tts = await synthesizeAndUpload(reply);
                       if (tts.ok && tts.url) {
-                        const sendAudio = await sendWhatsAppAudioLink(from, tts.url);
+                        const sendAudio = await sendWhatsAppAudioLink(from, tts.url, creds);
                         await supabaseAdmin.from("messages").insert({
                           org_id: orgId,
                           contact_id: existing.id, direction: "outbound", channel: "whatsapp",

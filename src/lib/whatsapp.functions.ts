@@ -17,8 +17,10 @@ export const sendWhatsAppReply = createServerFn({ method: "POST" })
       .from("contacts").select("id, phone, org_id").eq("id", data.contactId).single();
     if (cErr || !contact?.phone) throw new Error("Contato sem telefone");
 
-    const { sendWhatsAppText } = await import("./whatsapp.server");
-    const result = await sendWhatsAppText(contact.phone, data.content);
+    const { sendWhatsAppText, getOrgWhatsAppCreds } = await import("./whatsapp.server");
+    const creds = await getOrgWhatsAppCreds(contact.org_id);
+    const result = await sendWhatsAppText(contact.phone, data.content, creds);
+
 
     const nowIso = new Date().toISOString();
     const { error: mErr } = await supabase.from("messages").insert({

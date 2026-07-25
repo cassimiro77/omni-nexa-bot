@@ -55,12 +55,14 @@ export async function tickFunnels(): Promise<{ advanced: number; completed: numb
             let delivered = false;
             let sendError: string | undefined;
             if (contact.phone) {
-              const { sendWhatsAppText } = await import("./whatsapp.server");
-              const r = await sendWhatsAppText(contact.phone, content);
+              const { sendWhatsAppText, getOrgWhatsAppCreds } = await import("./whatsapp.server");
+              const creds = await getOrgWhatsAppCreds(contact.org_id);
+              const r = await sendWhatsAppText(contact.phone, content, creds);
               delivered = r.ok;
               wa_message_id = r.wa_message_id ?? null;
               sendError = r.error;
             }
+
             await supabaseAdmin.from("messages").insert({
               org_id: contact.org_id,
               contact_id: run.contact_id,

@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 // Handoff queue tick — invoked by pg_cron every minute.
 // Processes waiting/in_service tickets: initial alerts, customer notice,
 // supervisor escalation, recurring reminders, optional auto-return timeout.
+// Multi-tenant: settings & WhatsApp credentials are resolved per org.
 export const Route = createFileRoute("/api/public/handoff/tick")({
   server: {
     handlers: {
@@ -12,22 +13,19 @@ export const Route = createFileRoute("/api/public/handoff/tick")({
   },
 });
 
+type OrgSettings = {
+  handoff_alert_phone: string | null;
+  handoff_supervisor_phone: string | null;
+  handoff_wait_customer_min: number | null;
+  handoff_escalate_min: number | null;
+  handoff_reminder_interval_min: number | null;
+  handoff_auto_return_min: number | null;
+  business_name: string | null;
+};
+
 async function runTick() {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { sendWhatsAppText } = await import("@/lib/whatsapp.server");
-
-  const { data: settings } = await supabaseAdmin
-    .from("settings")
-    .select("handoff_alert_phone, handoff_supervisor_phone, handoff_wait_customer_min, handoff_escalate_min, handoff_reminder_interval_min, handoff_auto_return_min, business_name")
-    .order("created_at", { ascending: true }).limit(1)
-    .maybeSingle();
-
-  const alertPhone = settings?.handoff_alert_phone?.trim() || null;
-  const supPhone = settings?.handoff_supervisor_phone?.trim() || null;
-  const waitCustomerMin = settings?.handoff_wait_customer_min ?? 30;
-  const escalateMin = settings?.handoff_escalate_min ?? 70;
-  const reminderMin = settings?.handoff_reminder_interval_min ?? 30;
-  const autoReturnMin = settings?.handoff_auto_return_min ?? null;
+  const { sendWhatsAppText, getOrgWhatsAppCreds } = await import("@/lib/whatsapp.server");
 
   const { data: tickets } = await supabaseAdmin
     .from("handoff_queue")
@@ -37,6 +35,27 @@ async function runTick() {
   const now = Date.now();
   const results: Record<string, unknown>[] = [];
 
+  // Per-org caches to avoid repeated lookups within one tick.
+  const settingsCache = new Map<string, OrgSettings | null>();
+  const credsCache = new Map<string, Awaited<ReturnType<typeof getOrgWhatsAppCreds>>>();
+
+  async function loadSettings(orgId: string): Promise<OrgSettings | null> {
+    if (settingsCache.has(orgId)) return settingsCache.get(orgId) ?? null;
+    const { data } = await supabaseAdmin
+      .from("settings")
+      .select("handoff_alert_phone, handoff_supervisor_phone, handoff_wait_customer_min, handoff_escalate_min, handoff_reminder_interval_min, handoff_auto_return_min, business_name")
+      .eq("org_id", orgId)
+      .maybeSingle();
+    settingsCache.set(orgId, (data as OrgSettings | null) ?? null);
+    return (data as OrgSettings | null) ?? null;
+  }
+  async function loadCreds(orgId: string) {
+    if (credsCache.has(orgId)) return credsCache.get(orgId)!;
+    const c = await getOrgWhatsAppCreds(orgId);
+    credsCache.set(orgId, c);
+    return c;
+  }
+
   for (const t of tickets ?? []) {
     const contact = (t as { contacts?: { name?: string | null; phone?: string | null } }).contacts;
     const name = contact?.name ?? "Contato";
@@ -44,10 +63,20 @@ async function runTick() {
     const waitedMs = now - new Date(t.requested_at).getTime();
     const waitedMin = Math.floor(waitedMs / 60000);
 
+    const settings = await loadSettings(t.org_id);
+    const creds = await loadCreds(t.org_id);
+
+    const alertPhone = settings?.handoff_alert_phone?.trim() || null;
+    const supPhone = settings?.handoff_supervisor_phone?.trim() || null;
+    const waitCustomerMin = settings?.handoff_wait_customer_min ?? 30;
+    const escalateMin = settings?.handoff_escalate_min ?? 70;
+    const reminderMin = settings?.handoff_reminder_interval_min ?? 30;
+    const autoReturnMin = settings?.handoff_auto_return_min ?? null;
+
     // === Initial alert (fires as soon as ticket exists) ===
     if (t.status === "waiting" && t.alert_count === 0 && alertPhone) {
       const msg = `🔔 Novo pedido de atendimento humano\n\nCliente: ${name}\nTelefone: ${phone}\nAguardando há ${waitedMin} min.\n\nAcesse a fila para assumir.`;
-      const r = await sendWhatsAppText(alertPhone, msg);
+      const r = await sendWhatsAppText(alertPhone, msg, creds);
       await supabaseAdmin
         .from("handoff_queue")
         .update({ alert_count: 1, last_alert_at: new Date().toISOString() })
@@ -63,7 +92,7 @@ async function runTick() {
       phone && phone !== "?"
     ) {
       const notice = `Olá! Você já foi direcionado a um atendente. Ele(a) está finalizando outro atendimento e conversa com você em instantes. Obrigado pela paciência! 🙏`;
-      const r = await sendWhatsAppText(phone, notice);
+      const r = await sendWhatsAppText(phone, notice, creds);
       if (r.ok) {
         await supabaseAdmin.from("messages").insert({
           org_id: t.org_id,
@@ -86,7 +115,7 @@ async function runTick() {
     // === Supervisor escalation ===
     if (t.status === "waiting" && !t.escalated_at && waitedMin >= escalateMin && supPhone) {
       const msg = `⚠️ Escalonamento: atendimento de ${name} (${phone}) sem resposta há ${waitedMin} min. Por favor, verifique a equipe.`;
-      const r = await sendWhatsAppText(supPhone, msg);
+      const r = await sendWhatsAppText(supPhone, msg, creds);
       await supabaseAdmin
         .from("handoff_queue")
         .update({ escalated_at: new Date().toISOString() })
@@ -99,7 +128,7 @@ async function runTick() {
       const sinceLast = now - new Date(t.last_alert_at).getTime();
       if (sinceLast >= reminderMin * 60000) {
         const msg = `⏰ Atendimento pendente há ${waitedMin} min\n\nCliente: ${name}\nTelefone: ${phone}`;
-        const r = await sendWhatsAppText(alertPhone, msg);
+        const r = await sendWhatsAppText(alertPhone, msg, creds);
         await supabaseAdmin
           .from("handoff_queue")
           .update({ last_alert_at: new Date().toISOString(), alert_count: (t.alert_count ?? 0) + 1 })
@@ -129,7 +158,8 @@ async function runTick() {
         if (supPhone) {
           await sendWhatsAppText(
             supPhone,
-            `⚠️ Timeout: atendimento de ${name} (${phone}) foi devolvido ao bot após ${autoReturnMin} min sem resposta do operador.`
+            `⚠️ Timeout: atendimento de ${name} (${phone}) foi devolvido ao bot após ${autoReturnMin} min sem resposta do operador.`,
+            creds,
           );
         }
         results.push({ id: t.id, action: "auto_return" });

@@ -42,6 +42,7 @@ function SettingsPage() {
     handoff_alert_phone: "", handoff_supervisor_phone: "",
     handoff_wait_customer_min: 30, handoff_escalate_min: 70, handoff_reminder_interval_min: 30,
     handoff_auto_return_min: 0,
+    wa_phone_number_id: "", wa_token: "",
   });
 
   useEffect(() => {
@@ -56,20 +57,26 @@ function SettingsPage() {
       handoff_escalate_min: (data as { handoff_escalate_min?: number }).handoff_escalate_min ?? 70,
       handoff_reminder_interval_min: (data as { handoff_reminder_interval_min?: number }).handoff_reminder_interval_min ?? 30,
       handoff_auto_return_min: (data as { handoff_auto_return_min?: number | null }).handoff_auto_return_min ?? 0,
+      wa_phone_number_id: (data as { wa_phone_number_id?: string | null }).wa_phone_number_id ?? "",
+      wa_token: (data as { wa_token?: string | null }).wa_token ?? "",
     });
   }, [data]);
+
 
   async function save() {
     if (!orgId) return toast.error("Workspace ainda carregando");
     const payload = {
       ...form,
       handoff_auto_return_min: form.handoff_auto_return_min > 0 ? form.handoff_auto_return_min : null,
+      wa_phone_number_id: form.wa_phone_number_id.trim() || null,
+      wa_token: form.wa_token.trim() || null,
     };
     const { error } = await supabase.from("settings").update(payload).eq("org_id", orgId);
     if (error) return toast.error(error.message);
     toast.success("Configurações salvas");
     qc.invalidateQueries({ queryKey: ["settings"] });
   }
+
 
   const origin = "https://project--e0efd13b-a401-4810-b28e-430a1d408866.lovable.app";
   const publicOrigin = "https://omni-nexa-bot.lovable.app";
@@ -109,8 +116,21 @@ function SettingsPage() {
           <p className="text-xs text-muted-foreground">Cada novo lead pode ser enviado a esta URL para acionar seu CRM/ERP.</p>
         </Card>
 
+        <Card icon={<KeyRound className="h-4 w-4" />} title="WhatsApp Cloud API (credenciais desta workspace)">
+          <Field label="Phone Number ID">
+            <input value={form.wa_phone_number_id} onChange={(e) => setForm({ ...form, wa_phone_number_id: e.target.value })} placeholder="Ex.: 1284573314730216" className={inputCls} />
+          </Field>
+          <Field label="Access Token (permanente ou de teste)">
+            <input type="password" value={form.wa_token} onChange={(e) => setForm({ ...form, wa_token: e.target.value })} placeholder="EAAG…" className={inputCls} autoComplete="off" />
+          </Field>
+          <p className="text-xs text-muted-foreground">
+            Cada workspace usa seu próprio número. Copie o <strong>Phone Number ID</strong> e o <strong>Token</strong> do painel da Meta (WhatsApp → Configuração da API) e cole aqui. O webhook abaixo é o mesmo para todas as workspaces — o roteamento é feito pelo Phone Number ID.
+          </p>
+        </Card>
+
         <Card icon={<KeyRound className="h-4 w-4" />} title="URLs de webhook (configure na Meta)">
           <ReadOnly label="WhatsApp Cloud API" value={waWebhook} onCopy={() => copy(waWebhook)} />
+
           <ReadOnly label="WhatsApp Cloud API (domínio publicado)" value={`${publicOrigin}/api/public/whatsapp/webhook`} onCopy={() => copy(`${publicOrigin}/api/public/whatsapp/webhook`)} />
           <ReadOnly label="Meta Lead Ads" value={leadsWebhook} onCopy={() => copy(leadsWebhook)} />
           <p className="text-xs text-muted-foreground">
