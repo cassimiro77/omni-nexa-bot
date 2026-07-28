@@ -15,6 +15,7 @@ import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as FSlugRouteImport } from './routes/f.$slug'
 import { Route as EmailUnsubscribeRouteImport } from './routes/email/unsubscribe'
 import { Route as AppTrainingRouteImport } from './routes/app.training'
 import { Route as AppTemplatesRouteImport } from './routes/app.templates'
@@ -71,6 +72,11 @@ const AppRoute = AppRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FSlugRoute = FSlugRouteImport.update({
+  id: '/f/$slug',
+  path: '/f/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EmailUnsubscribeRoute = EmailUnsubscribeRouteImport.update({
@@ -235,6 +241,7 @@ export interface FileRoutesByFullPath {
   '/app/templates': typeof AppTemplatesRoute
   '/app/training': typeof AppTrainingRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
+  '/f/$slug': typeof FSlugRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/api/public/admin-test/send': typeof ApiPublicAdminTestSendRoute
   '/api/public/cron/tick': typeof ApiPublicCronTickRoute
@@ -270,6 +277,7 @@ export interface FileRoutesByTo {
   '/app/templates': typeof AppTemplatesRoute
   '/app/training': typeof AppTrainingRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
+  '/f/$slug': typeof FSlugRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/api/public/admin-test/send': typeof ApiPublicAdminTestSendRoute
   '/api/public/cron/tick': typeof ApiPublicCronTickRoute
@@ -306,6 +314,7 @@ export interface FileRoutesById {
   '/app/templates': typeof AppTemplatesRoute
   '/app/training': typeof AppTrainingRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
+  '/f/$slug': typeof FSlugRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/api/public/admin-test/send': typeof ApiPublicAdminTestSendRoute
   '/api/public/cron/tick': typeof ApiPublicCronTickRoute
@@ -343,6 +352,7 @@ export interface FileRouteTypes {
     | '/app/templates'
     | '/app/training'
     | '/email/unsubscribe'
+    | '/f/$slug'
     | '/lovable/email/suppression'
     | '/api/public/admin-test/send'
     | '/api/public/cron/tick'
@@ -378,6 +388,7 @@ export interface FileRouteTypes {
     | '/app/templates'
     | '/app/training'
     | '/email/unsubscribe'
+    | '/f/$slug'
     | '/lovable/email/suppression'
     | '/api/public/admin-test/send'
     | '/api/public/cron/tick'
@@ -413,6 +424,7 @@ export interface FileRouteTypes {
     | '/app/templates'
     | '/app/training'
     | '/email/unsubscribe'
+    | '/f/$slug'
     | '/lovable/email/suppression'
     | '/api/public/admin-test/send'
     | '/api/public/cron/tick'
@@ -437,6 +449,7 @@ export interface RootRouteChildren {
   TermsRoute: typeof TermsRoute
   UnsubscribeRoute: typeof UnsubscribeRoute
   EmailUnsubscribeRoute: typeof EmailUnsubscribeRoute
+  FSlugRoute: typeof FSlugRoute
   LovableEmailSuppressionRoute: typeof LovableEmailSuppressionRoute
   ApiPublicAdminTestSendRoute: typeof ApiPublicAdminTestSendRoute
   ApiPublicCronTickRoute: typeof ApiPublicCronTickRoute
@@ -495,6 +508,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/f/$slug': {
+      id: '/f/$slug'
+      path: '/f/$slug'
+      fullPath: '/f/$slug'
+      preLoaderRoute: typeof FSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/email/unsubscribe': {
@@ -729,6 +749,7 @@ const rootRouteChildren: RootRouteChildren = {
   TermsRoute: TermsRoute,
   UnsubscribeRoute: UnsubscribeRoute,
   EmailUnsubscribeRoute: EmailUnsubscribeRoute,
+  FSlugRoute: FSlugRoute,
   LovableEmailSuppressionRoute: LovableEmailSuppressionRoute,
   ApiPublicAdminTestSendRoute: ApiPublicAdminTestSendRoute,
   ApiPublicCronTickRoute: ApiPublicCronTickRoute,
