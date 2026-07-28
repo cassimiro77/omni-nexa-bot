@@ -17,48 +17,72 @@ export type Database = {
       contacts: {
         Row: {
           awaiting_nps: boolean
+          close_reason: string | null
+          closed_at: string | null
           created_at: string
+          crm_lead_id: string | null
+          crm_synced_at: string | null
           department_id: string | null
           email: string | null
+          estimated_value: number | null
+          event_date: string | null
           id: string
+          interest: string | null
           last_message_at: string | null
           metadata: Json | null
           name: string | null
           org_id: string
           origin: string | null
           phone: string | null
+          product: string | null
           status: string
           tags: string[] | null
           updated_at: string
         }
         Insert: {
           awaiting_nps?: boolean
+          close_reason?: string | null
+          closed_at?: string | null
           created_at?: string
+          crm_lead_id?: string | null
+          crm_synced_at?: string | null
           department_id?: string | null
           email?: string | null
+          estimated_value?: number | null
+          event_date?: string | null
           id?: string
+          interest?: string | null
           last_message_at?: string | null
           metadata?: Json | null
           name?: string | null
           org_id: string
           origin?: string | null
           phone?: string | null
+          product?: string | null
           status?: string
           tags?: string[] | null
           updated_at?: string
         }
         Update: {
           awaiting_nps?: boolean
+          close_reason?: string | null
+          closed_at?: string | null
           created_at?: string
+          crm_lead_id?: string | null
+          crm_synced_at?: string | null
           department_id?: string | null
           email?: string | null
+          estimated_value?: number | null
+          event_date?: string | null
           id?: string
+          interest?: string | null
           last_message_at?: string | null
           metadata?: Json | null
           name?: string | null
           org_id?: string
           origin?: string | null
           phone?: string | null
+          product?: string | null
           status?: string
           tags?: string[] | null
           updated_at?: string
@@ -746,6 +770,12 @@ export type Database = {
         Row: {
           ai_system_prompt: string | null
           business_name: string | null
+          crm_enabled: boolean
+          crm_token: string | null
+          crm_webhook_url: string | null
+          form_headline: string | null
+          form_products: string[]
+          form_slug: string | null
           handoff_alert_phone: string | null
           handoff_auto_return_min: number | null
           handoff_escalate_min: number
@@ -753,6 +783,7 @@ export type Database = {
           handoff_supervisor_phone: string | null
           handoff_wait_customer_min: number
           id: string
+          inactivity_close_min: number
           org_id: string
           outbound_webhook_url: string | null
           reply_with_audio: boolean
@@ -765,6 +796,12 @@ export type Database = {
         Insert: {
           ai_system_prompt?: string | null
           business_name?: string | null
+          crm_enabled?: boolean
+          crm_token?: string | null
+          crm_webhook_url?: string | null
+          form_headline?: string | null
+          form_products?: string[]
+          form_slug?: string | null
           handoff_alert_phone?: string | null
           handoff_auto_return_min?: number | null
           handoff_escalate_min?: number
@@ -772,6 +809,7 @@ export type Database = {
           handoff_supervisor_phone?: string | null
           handoff_wait_customer_min?: number
           id?: string
+          inactivity_close_min?: number
           org_id: string
           outbound_webhook_url?: string | null
           reply_with_audio?: boolean
@@ -784,6 +822,12 @@ export type Database = {
         Update: {
           ai_system_prompt?: string | null
           business_name?: string | null
+          crm_enabled?: boolean
+          crm_token?: string | null
+          crm_webhook_url?: string | null
+          form_headline?: string | null
+          form_products?: string[]
+          form_slug?: string | null
           handoff_alert_phone?: string | null
           handoff_auto_return_min?: number | null
           handoff_escalate_min?: number
@@ -791,6 +835,7 @@ export type Database = {
           handoff_supervisor_phone?: string | null
           handoff_wait_customer_min?: number
           id?: string
+          inactivity_close_min?: number
           org_id?: string
           outbound_webhook_url?: string | null
           reply_with_audio?: boolean

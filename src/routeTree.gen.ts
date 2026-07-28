@@ -15,6 +15,7 @@ import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as FSlugRouteImport } from './routes/f.$slug'
 import { Route as EmailUnsubscribeRouteImport } from './routes/email/unsubscribe'
 import { Route as AppTrainingRouteImport } from './routes/app.training'
 import { Route as AppTemplatesRouteImport } from './routes/app.templates'
@@ -37,6 +38,7 @@ import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/em
 import { Route as ApiPublicWidgetEmbedDotjsRouteImport } from './routes/api/public/widget/embed[.]js'
 import { Route as ApiPublicWidgetChatRouteImport } from './routes/api/public/widget/chat'
 import { Route as ApiPublicWhatsappWebhookRouteImport } from './routes/api/public/whatsapp/webhook'
+import { Route as ApiPublicLeadsFormRouteImport } from './routes/api/public/leads/form'
 import { Route as ApiPublicHandoffTickRouteImport } from './routes/api/public/handoff/tick'
 import { Route as ApiPublicCronTickRouteImport } from './routes/api/public/cron.tick'
 import { Route as ApiPublicAdminTestSendRouteImport } from './routes/api/public/admin-test/send'
@@ -70,6 +72,11 @@ const AppRoute = AppRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FSlugRoute = FSlugRouteImport.update({
+  id: '/f/$slug',
+  path: '/f/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EmailUnsubscribeRoute = EmailUnsubscribeRouteImport.update({
@@ -187,6 +194,11 @@ const ApiPublicWhatsappWebhookRoute =
     path: '/api/public/whatsapp/webhook',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicLeadsFormRoute = ApiPublicLeadsFormRouteImport.update({
+  id: '/api/public/leads/form',
+  path: '/api/public/leads/form',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicHandoffTickRoute = ApiPublicHandoffTickRouteImport.update({
   id: '/api/public/handoff/tick',
   path: '/api/public/handoff/tick',
@@ -229,10 +241,12 @@ export interface FileRoutesByFullPath {
   '/app/templates': typeof AppTemplatesRoute
   '/app/training': typeof AppTrainingRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
+  '/f/$slug': typeof FSlugRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/api/public/admin-test/send': typeof ApiPublicAdminTestSendRoute
   '/api/public/cron/tick': typeof ApiPublicCronTickRoute
   '/api/public/handoff/tick': typeof ApiPublicHandoffTickRoute
+  '/api/public/leads/form': typeof ApiPublicLeadsFormRoute
   '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
   '/api/public/widget/chat': typeof ApiPublicWidgetChatRoute
   '/api/public/widget/embed.js': typeof ApiPublicWidgetEmbedDotjsRoute
@@ -263,10 +277,12 @@ export interface FileRoutesByTo {
   '/app/templates': typeof AppTemplatesRoute
   '/app/training': typeof AppTrainingRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
+  '/f/$slug': typeof FSlugRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/api/public/admin-test/send': typeof ApiPublicAdminTestSendRoute
   '/api/public/cron/tick': typeof ApiPublicCronTickRoute
   '/api/public/handoff/tick': typeof ApiPublicHandoffTickRoute
+  '/api/public/leads/form': typeof ApiPublicLeadsFormRoute
   '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
   '/api/public/widget/chat': typeof ApiPublicWidgetChatRoute
   '/api/public/widget/embed.js': typeof ApiPublicWidgetEmbedDotjsRoute
@@ -298,10 +314,12 @@ export interface FileRoutesById {
   '/app/templates': typeof AppTemplatesRoute
   '/app/training': typeof AppTrainingRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
+  '/f/$slug': typeof FSlugRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/api/public/admin-test/send': typeof ApiPublicAdminTestSendRoute
   '/api/public/cron/tick': typeof ApiPublicCronTickRoute
   '/api/public/handoff/tick': typeof ApiPublicHandoffTickRoute
+  '/api/public/leads/form': typeof ApiPublicLeadsFormRoute
   '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
   '/api/public/widget/chat': typeof ApiPublicWidgetChatRoute
   '/api/public/widget/embed.js': typeof ApiPublicWidgetEmbedDotjsRoute
@@ -334,10 +352,12 @@ export interface FileRouteTypes {
     | '/app/templates'
     | '/app/training'
     | '/email/unsubscribe'
+    | '/f/$slug'
     | '/lovable/email/suppression'
     | '/api/public/admin-test/send'
     | '/api/public/cron/tick'
     | '/api/public/handoff/tick'
+    | '/api/public/leads/form'
     | '/api/public/whatsapp/webhook'
     | '/api/public/widget/chat'
     | '/api/public/widget/embed.js'
@@ -368,10 +388,12 @@ export interface FileRouteTypes {
     | '/app/templates'
     | '/app/training'
     | '/email/unsubscribe'
+    | '/f/$slug'
     | '/lovable/email/suppression'
     | '/api/public/admin-test/send'
     | '/api/public/cron/tick'
     | '/api/public/handoff/tick'
+    | '/api/public/leads/form'
     | '/api/public/whatsapp/webhook'
     | '/api/public/widget/chat'
     | '/api/public/widget/embed.js'
@@ -402,10 +424,12 @@ export interface FileRouteTypes {
     | '/app/templates'
     | '/app/training'
     | '/email/unsubscribe'
+    | '/f/$slug'
     | '/lovable/email/suppression'
     | '/api/public/admin-test/send'
     | '/api/public/cron/tick'
     | '/api/public/handoff/tick'
+    | '/api/public/leads/form'
     | '/api/public/whatsapp/webhook'
     | '/api/public/widget/chat'
     | '/api/public/widget/embed.js'
@@ -425,10 +449,12 @@ export interface RootRouteChildren {
   TermsRoute: typeof TermsRoute
   UnsubscribeRoute: typeof UnsubscribeRoute
   EmailUnsubscribeRoute: typeof EmailUnsubscribeRoute
+  FSlugRoute: typeof FSlugRoute
   LovableEmailSuppressionRoute: typeof LovableEmailSuppressionRoute
   ApiPublicAdminTestSendRoute: typeof ApiPublicAdminTestSendRoute
   ApiPublicCronTickRoute: typeof ApiPublicCronTickRoute
   ApiPublicHandoffTickRoute: typeof ApiPublicHandoffTickRoute
+  ApiPublicLeadsFormRoute: typeof ApiPublicLeadsFormRoute
   ApiPublicWhatsappWebhookRoute: typeof ApiPublicWhatsappWebhookRoute
   ApiPublicWidgetChatRoute: typeof ApiPublicWidgetChatRoute
   ApiPublicWidgetEmbedDotjsRoute: typeof ApiPublicWidgetEmbedDotjsRoute
@@ -482,6 +508,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/f/$slug': {
+      id: '/f/$slug'
+      path: '/f/$slug'
+      fullPath: '/f/$slug'
+      preLoaderRoute: typeof FSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/email/unsubscribe': {
@@ -638,6 +671,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicWhatsappWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/leads/form': {
+      id: '/api/public/leads/form'
+      path: '/api/public/leads/form'
+      fullPath: '/api/public/leads/form'
+      preLoaderRoute: typeof ApiPublicLeadsFormRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/handoff/tick': {
       id: '/api/public/handoff/tick'
       path: '/api/public/handoff/tick'
@@ -709,10 +749,12 @@ const rootRouteChildren: RootRouteChildren = {
   TermsRoute: TermsRoute,
   UnsubscribeRoute: UnsubscribeRoute,
   EmailUnsubscribeRoute: EmailUnsubscribeRoute,
+  FSlugRoute: FSlugRoute,
   LovableEmailSuppressionRoute: LovableEmailSuppressionRoute,
   ApiPublicAdminTestSendRoute: ApiPublicAdminTestSendRoute,
   ApiPublicCronTickRoute: ApiPublicCronTickRoute,
   ApiPublicHandoffTickRoute: ApiPublicHandoffTickRoute,
+  ApiPublicLeadsFormRoute: ApiPublicLeadsFormRoute,
   ApiPublicWhatsappWebhookRoute: ApiPublicWhatsappWebhookRoute,
   ApiPublicWidgetChatRoute: ApiPublicWidgetChatRoute,
   ApiPublicWidgetEmbedDotjsRoute: ApiPublicWidgetEmbedDotjsRoute,
@@ -726,13 +768,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
