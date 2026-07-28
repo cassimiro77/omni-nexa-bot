@@ -59,7 +59,7 @@ export async function intakeLead(
     event_date: input.event_date || undefined,
     estimated_value: input.estimated_value ?? undefined,
     product: input.product ?? undefined,
-    metadata: input.metadata ?? undefined,
+    metadata: (input.metadata ?? undefined) as never,
   };
 
   let contactId: string;
