@@ -102,7 +102,7 @@ function PublicForm() {
               <F label="O que você procura?">
                 <select name="product" className={i}>
                   <option value="">Selecione…</option>
-                  {info.products.map((p) => <option key={p} value={p}>{p}</option>)}
+                  {(info.products as string[]).map((p: string) => <option key={p} value={p}>{p}</option>)}
                 </select>
               </F>
             )}
