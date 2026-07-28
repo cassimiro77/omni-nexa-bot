@@ -276,6 +276,16 @@ export const Route = createFileRoute("/api/public/whatsapp/webhook")({
                   continue;
                 }
 
+                // === Detect give-up / decline → close lead and sync CRM ===
+                if (/\b(n[aã]o quero|n[aã]o tenho interesse|desisti|desistir|pode cancelar|cancelar or[cç]amento|obrigado,? j[aá] resolvi)\b/.test(lower)) {
+                  const bye = "Sem problemas! Obrigada pelo contato. Se mudar de ideia, é só chamar por aqui. 💛";
+                  const { closeContact } = await import("@/lib/inactivity.server");
+                  await closeContact(orgId, existing.id, "customer_declined", { phone: from, text: bye, creds });
+                  repliedMessages += 1;
+                  continue;
+                }
+
+
                 // === Welcome menu on first contact ===
                 if (isFirstContact) {
                   const { data: settings } = await supabaseAdmin.from("settings").select("welcome_message, business_name").eq("org_id", orgId).maybeSingle();
