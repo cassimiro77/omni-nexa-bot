@@ -37,6 +37,7 @@ import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/em
 import { Route as ApiPublicWidgetEmbedDotjsRouteImport } from './routes/api/public/widget/embed[.]js'
 import { Route as ApiPublicWidgetChatRouteImport } from './routes/api/public/widget/chat'
 import { Route as ApiPublicWhatsappWebhookRouteImport } from './routes/api/public/whatsapp/webhook'
+import { Route as ApiPublicLeadsFormRouteImport } from './routes/api/public/leads/form'
 import { Route as ApiPublicHandoffTickRouteImport } from './routes/api/public/handoff/tick'
 import { Route as ApiPublicCronTickRouteImport } from './routes/api/public/cron.tick'
 import { Route as ApiPublicAdminTestSendRouteImport } from './routes/api/public/admin-test/send'
@@ -187,6 +188,11 @@ const ApiPublicWhatsappWebhookRoute =
     path: '/api/public/whatsapp/webhook',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicLeadsFormRoute = ApiPublicLeadsFormRouteImport.update({
+  id: '/api/public/leads/form',
+  path: '/api/public/leads/form',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicHandoffTickRoute = ApiPublicHandoffTickRouteImport.update({
   id: '/api/public/handoff/tick',
   path: '/api/public/handoff/tick',
@@ -233,6 +239,7 @@ export interface FileRoutesByFullPath {
   '/api/public/admin-test/send': typeof ApiPublicAdminTestSendRoute
   '/api/public/cron/tick': typeof ApiPublicCronTickRoute
   '/api/public/handoff/tick': typeof ApiPublicHandoffTickRoute
+  '/api/public/leads/form': typeof ApiPublicLeadsFormRoute
   '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
   '/api/public/widget/chat': typeof ApiPublicWidgetChatRoute
   '/api/public/widget/embed.js': typeof ApiPublicWidgetEmbedDotjsRoute
@@ -267,6 +274,7 @@ export interface FileRoutesByTo {
   '/api/public/admin-test/send': typeof ApiPublicAdminTestSendRoute
   '/api/public/cron/tick': typeof ApiPublicCronTickRoute
   '/api/public/handoff/tick': typeof ApiPublicHandoffTickRoute
+  '/api/public/leads/form': typeof ApiPublicLeadsFormRoute
   '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
   '/api/public/widget/chat': typeof ApiPublicWidgetChatRoute
   '/api/public/widget/embed.js': typeof ApiPublicWidgetEmbedDotjsRoute
@@ -302,6 +310,7 @@ export interface FileRoutesById {
   '/api/public/admin-test/send': typeof ApiPublicAdminTestSendRoute
   '/api/public/cron/tick': typeof ApiPublicCronTickRoute
   '/api/public/handoff/tick': typeof ApiPublicHandoffTickRoute
+  '/api/public/leads/form': typeof ApiPublicLeadsFormRoute
   '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
   '/api/public/widget/chat': typeof ApiPublicWidgetChatRoute
   '/api/public/widget/embed.js': typeof ApiPublicWidgetEmbedDotjsRoute
@@ -338,6 +347,7 @@ export interface FileRouteTypes {
     | '/api/public/admin-test/send'
     | '/api/public/cron/tick'
     | '/api/public/handoff/tick'
+    | '/api/public/leads/form'
     | '/api/public/whatsapp/webhook'
     | '/api/public/widget/chat'
     | '/api/public/widget/embed.js'
@@ -372,6 +382,7 @@ export interface FileRouteTypes {
     | '/api/public/admin-test/send'
     | '/api/public/cron/tick'
     | '/api/public/handoff/tick'
+    | '/api/public/leads/form'
     | '/api/public/whatsapp/webhook'
     | '/api/public/widget/chat'
     | '/api/public/widget/embed.js'
@@ -406,6 +417,7 @@ export interface FileRouteTypes {
     | '/api/public/admin-test/send'
     | '/api/public/cron/tick'
     | '/api/public/handoff/tick'
+    | '/api/public/leads/form'
     | '/api/public/whatsapp/webhook'
     | '/api/public/widget/chat'
     | '/api/public/widget/embed.js'
@@ -429,6 +441,7 @@ export interface RootRouteChildren {
   ApiPublicAdminTestSendRoute: typeof ApiPublicAdminTestSendRoute
   ApiPublicCronTickRoute: typeof ApiPublicCronTickRoute
   ApiPublicHandoffTickRoute: typeof ApiPublicHandoffTickRoute
+  ApiPublicLeadsFormRoute: typeof ApiPublicLeadsFormRoute
   ApiPublicWhatsappWebhookRoute: typeof ApiPublicWhatsappWebhookRoute
   ApiPublicWidgetChatRoute: typeof ApiPublicWidgetChatRoute
   ApiPublicWidgetEmbedDotjsRoute: typeof ApiPublicWidgetEmbedDotjsRoute
@@ -638,6 +651,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicWhatsappWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/leads/form': {
+      id: '/api/public/leads/form'
+      path: '/api/public/leads/form'
+      fullPath: '/api/public/leads/form'
+      preLoaderRoute: typeof ApiPublicLeadsFormRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/handoff/tick': {
       id: '/api/public/handoff/tick'
       path: '/api/public/handoff/tick'
@@ -713,6 +733,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicAdminTestSendRoute: ApiPublicAdminTestSendRoute,
   ApiPublicCronTickRoute: ApiPublicCronTickRoute,
   ApiPublicHandoffTickRoute: ApiPublicHandoffTickRoute,
+  ApiPublicLeadsFormRoute: ApiPublicLeadsFormRoute,
   ApiPublicWhatsappWebhookRoute: ApiPublicWhatsappWebhookRoute,
   ApiPublicWidgetChatRoute: ApiPublicWidgetChatRoute,
   ApiPublicWidgetEmbedDotjsRoute: ApiPublicWidgetEmbedDotjsRoute,
