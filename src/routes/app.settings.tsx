@@ -43,6 +43,9 @@ function SettingsPage() {
     handoff_wait_customer_min: 30, handoff_escalate_min: 70, handoff_reminder_interval_min: 30,
     handoff_auto_return_min: 0,
     wa_phone_number_id: "", wa_token: "",
+    crm_enabled: false, crm_webhook_url: "", crm_token: "",
+    form_slug: "", form_headline: "", form_products: "",
+    inactivity_close_min: 120,
   });
 
   useEffect(() => {
@@ -59,6 +62,13 @@ function SettingsPage() {
       handoff_auto_return_min: (data as { handoff_auto_return_min?: number | null }).handoff_auto_return_min ?? 0,
       wa_phone_number_id: (data as { wa_phone_number_id?: string | null }).wa_phone_number_id ?? "",
       wa_token: (data as { wa_token?: string | null }).wa_token ?? "",
+      crm_enabled: (data as { crm_enabled?: boolean }).crm_enabled ?? false,
+      crm_webhook_url: (data as { crm_webhook_url?: string | null }).crm_webhook_url ?? "",
+      crm_token: (data as { crm_token?: string | null }).crm_token ?? "",
+      form_slug: (data as { form_slug?: string | null }).form_slug ?? "",
+      form_headline: (data as { form_headline?: string | null }).form_headline ?? "",
+      form_products: ((data as { form_products?: string[] }).form_products ?? []).join(", "),
+      inactivity_close_min: (data as { inactivity_close_min?: number }).inactivity_close_min ?? 120,
     });
   }, [data]);
 
@@ -70,12 +80,19 @@ function SettingsPage() {
       handoff_auto_return_min: form.handoff_auto_return_min > 0 ? form.handoff_auto_return_min : null,
       wa_phone_number_id: form.wa_phone_number_id.trim() || null,
       wa_token: form.wa_token.trim() || null,
+      crm_webhook_url: form.crm_webhook_url.trim() || null,
+      crm_token: form.crm_token.trim() || null,
+      form_slug: form.form_slug.trim().toLowerCase().replace(/[^a-z0-9-]/g, "-") || null,
+      form_headline: form.form_headline.trim() || null,
+      form_products: form.form_products.split(",").map((p) => p.trim()).filter(Boolean),
+      inactivity_close_min: Number(form.inactivity_close_min) || 0,
     };
     const { error } = await supabase.from("settings").update(payload).eq("org_id", orgId);
     if (error) return toast.error(error.message);
     toast.success("Configurações salvas");
     qc.invalidateQueries({ queryKey: ["settings"] });
   }
+
 
 
   const origin = "https://project--e0efd13b-a401-4810-b28e-430a1d408866.lovable.app";
